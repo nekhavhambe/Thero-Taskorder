@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FC, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { StatusPill, Toolbar, ToolbarButton, fireToolbarAction } from '../Toolbar';
+import type { ToolbarAction } from '../Toolbar';
 import Container from '../container';
 
 interface HeaderTab {
@@ -30,6 +31,7 @@ export interface LayoutProps {
 export const Layout: FC<LayoutProps> = ({ children }) => {
   const [activeTab, setActiveTab] = useState('task-order');
   const [status, setStatus] = useState<'under' | 'over'>('under');
+  const [pending, setPending] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,6 +43,25 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   const handleTabClick = (tab: HeaderTab) => {
     setActiveTab(tab.id);
     if (tab.to) navigate(tab.to);
+  };
+
+  const setBusy = (key: string, busy: boolean) =>
+    setPending((prev) => ({ ...prev, [key]: busy }));
+
+  /** Toolbar event buttons: stay in loading state until every page handler finishes. */
+  const runToolbarAction = (action: ToolbarAction) => {
+    setBusy(action, true);
+    void fireToolbarAction(action).finally(() => setBusy(action, false));
+  };
+
+  /** Local buttons: loading state covers the (sync) handler. */
+  const runLocalAction = (key: string, fn: () => void) => {
+    setBusy(key, true);
+    try {
+      fn();
+    } finally {
+      setBusy(key, false);
+    }
   };
 
   return (
@@ -91,21 +112,22 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
           />
         }
       >
-        <ToolbarButton variant="blue" onClick={() => fireToolbarAction('new')}>
+        <ToolbarButton variant="blue" loading={!!pending.new} onClick={() => runToolbarAction('new')}>
           New
         </ToolbarButton>
-        <ToolbarButton variant="blue" onClick={() => fireToolbarAction('generate')}>
+        <ToolbarButton variant="blue" loading={!!pending.generate} onClick={() => runToolbarAction('generate')}>
           Generate Sales Order
         </ToolbarButton>
-        <ToolbarButton variant="grey" onClick={() => fireToolbarAction('issue')}>
+        <ToolbarButton variant="grey" loading={!!pending.issue} onClick={() => runToolbarAction('issue')}>
           Issue Requisition
         </ToolbarButton>
-        <ToolbarButton variant="grey" onClick={() => navigate('/task-order')}>
+        <ToolbarButton variant="grey" loading={!!pending.allocate} onClick={() => runLocalAction('allocate', () => navigate('/task-order'))}>
           Allocate Tasks
         </ToolbarButton>
         <ToolbarButton
           variant="grey"
-          onClick={() => setStatus((prev) => (prev === 'under' ? 'over' : 'under'))}
+          loading={!!pending.budget}
+          onClick={() => runLocalAction('budget', () => setStatus((prev) => (prev === 'under' ? 'over' : 'under')))}
         >
           Update Budget
         </ToolbarButton>

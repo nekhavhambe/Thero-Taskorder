@@ -8,7 +8,7 @@ import { Select } from '../../components/Select';
 import { DatePicker } from '../../components/DatePicker';
 import { Checkbox } from '../../components/Checkbox';
 import { TOOLBAR_ACTION_EVENT } from '../../components/Toolbar';
-import type { ToolbarAction } from '../../components/Toolbar';
+import type { ToolbarActionDetail } from '../../components/Toolbar';
 import {
   AGREEMENT_OPTIONS,
   CURRENCY_OPTIONS,
@@ -33,11 +33,11 @@ export const Form: FC<FormProps> = ({
   // "New" resets the form; Generate / Issue bubble up via onSave.
   useEffect(() => {
     const handler = (e: Event) => {
-      const action = (e as CustomEvent<ToolbarAction>).detail;
+      const { action, waitUntil } = (e as CustomEvent<ToolbarActionDetail>).detail;
       if (action === 'new') {
         setFormData(INITIAL_RFQ_DATA);
       } else if (action === 'generate' || action === 'issue') {
-        if (onSave) onSave(formData);
+        if (onSave) waitUntil(Promise.resolve().then(() => onSave(formData)));
       }
     };
     window.addEventListener(TOOLBAR_ACTION_EVENT, handler);

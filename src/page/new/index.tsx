@@ -6,7 +6,7 @@ import { TextInput } from '../../components/TextInput';
 import { Autocomplete } from '../../components/Autocomplete';
 import { DatePicker } from '../../components/DatePicker';
 import { TOOLBAR_ACTION_EVENT } from '../../components/Toolbar';
-import type { ToolbarAction } from '../../components/Toolbar';
+import type { ToolbarActionDetail } from '../../components/Toolbar';
 import type { Project } from '../../components/types';
 import { createProject, projectCollection } from '../../collections/projects';
 import { submitNewTaskOrder } from '../../action/new-taskorder';
@@ -49,7 +49,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
   // "New" resubmits the DOM form via the action; Generate / Issue bubble up via onSubmit.
   useEffect(() => {
     const handler = (e: Event) => {
-      const action = (e as CustomEvent<ToolbarAction>).detail;
+      const { action, waitUntil } = (e as CustomEvent<ToolbarActionDetail>).detail;
       if (action === 'new') {
         const form = document.forms.namedItem('theForm');
         if (!form) {
@@ -58,16 +58,20 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
         }
         const v = getValues();
         console.log('hook values:', v);
-        void submitNewTaskOrder(form, {
-          values: {
-            purchase_order: v.purchaseOrder,
-            start_date: v.startDate,
-            end_date: v.endDate,
-            project: v.project,
-            task_description: v.taskOrderName,
-          },
-        }).catch((err) => console.error(err));
-      } else if (action === 'generate' || action === 'issue') onSubmit?.(getValues());
+        waitUntil(
+          submitNewTaskOrder(form, {
+            values: {
+              purchase_order: v.purchaseOrder,
+              start_date: v.startDate,
+              end_date: v.endDate,
+              project: v.project,
+              task_description: v.taskOrderName,
+            },
+          }).catch((err) => console.error(err)),
+        );
+      } else if (action === 'generate' || action === 'issue') {
+        if (onSubmit) waitUntil(Promise.resolve().then(() => onSubmit(getValues())));
+      }
     };
     window.addEventListener(TOOLBAR_ACTION_EVENT, handler);
     return () => window.removeEventListener(TOOLBAR_ACTION_EVENT, handler);

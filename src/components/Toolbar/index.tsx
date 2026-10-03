@@ -1,12 +1,29 @@
 import type { ButtonHTMLAttributes, FC, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 
 /** Event fired by the Layout toolbar so the active page can handle actions. */
 export const TOOLBAR_ACTION_EVENT = 'toolbar:action';
 
 export type ToolbarAction = 'new' | 'generate' | 'issue';
 
-export function fireToolbarAction(action: ToolbarAction): void {
-  window.dispatchEvent(new CustomEvent(TOOLBAR_ACTION_EVENT, { detail: action }));
+export interface ToolbarActionDetail {
+  action: ToolbarAction;
+  /** Lets a handler keep the toolbar button in loading state until async work finishes. */
+  waitUntil: (promise: Promise<unknown>) => void;
+}
+
+/**
+ * Fires a toolbar action and resolves once every handler's registered
+ * `waitUntil` promise settles — drive button loading states from this.
+ */
+export function fireToolbarAction(action: ToolbarAction): Promise<void> {
+  const pending: Promise<unknown>[] = [];
+  window.dispatchEvent(
+    new CustomEvent<ToolbarActionDetail>(TOOLBAR_ACTION_EVENT, {
+      detail: { action, waitUntil: (promise) => pending.push(promise) },
+    }),
+  );
+  return Promise.allSettled(pending).then(() => undefined);
 }
 
 export interface ToolbarProps {
@@ -34,11 +51,15 @@ export const Toolbar: FC<ToolbarProps> = ({ children, aside, className = '' }) =
 export interface ToolbarButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual variant: blue filled or grey filled. No borders. */
   variant?: 'blue' | 'grey';
+  /** Shows a spinner and disables the button until the action completes. */
+  loading?: boolean;
 }
 
 export const ToolbarButton: FC<ToolbarButtonProps> = ({
   variant = 'grey',
   type = 'button',
+  loading = false,
+  disabled,
   className = '',
   children,
   ...rest
@@ -50,9 +71,14 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
   return (
     <button
       type={type}
-      className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 ${variants[variant]} ${className}`}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 ${variants[variant]} ${className} ${
+        loading ? 'opacity-70 cursor-wait' : ''
+      }`}
       {...rest}
     >
+      {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
       {children}
     </button>
   );
