@@ -80,13 +80,13 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
 
   return (
     <div className="grid grid-cols-2 gap-4">
-          <Field label="Name" htmlFor="taskorder-name" labelWidth="w-32" orientation="row">
+          <Field label="Name" htmlFor="taskorder-name" labelWidth="w-40" orientation="row">
             <TextInput
               id="taskorder-name"
               {...register('taskOrderName')}
             />
           </Field>
-          <Field label="Project" htmlFor="project" labelWidth="w-32" orientation="row">
+          <Field label="Project" htmlFor="project" labelWidth="w-40" orientation="row">
             <Controller
               name="project"
               control={control}
@@ -105,7 +105,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
               )}
             />
           </Field>
-          <Field label="Start Date" htmlFor="start-date" labelWidth="w-32" orientation="row">
+          <Field label="Start Date" htmlFor="start-date" labelWidth="w-40" orientation="row">
             <Controller
               name="startDate"
               control={control}
@@ -119,7 +119,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
               )}
             />
           </Field>
-          <Field label="End Date" htmlFor="end-date" labelWidth="w-32" orientation="row">
+          <Field label="End Date" htmlFor="end-date" labelWidth="w-40" orientation="row">
             <Controller
               name="endDate"
               control={control}
