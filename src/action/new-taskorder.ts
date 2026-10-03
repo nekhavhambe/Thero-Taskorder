@@ -27,11 +27,14 @@ export async function submitNewTaskOrder(
   const { values = { task_description: 'martin is boss' }, redirectOnSuccess = true } = overrides;
 
   const formData = new FormData(form);
+  // All fields retrieved from newForm, before overrides.
+  console.log('newForm fields:', Object.fromEntries(formData.entries()));
   for (const [key, value] of Object.entries(values)) {
     formData.set(key, value);
   }
 
-  console.log(Object.fromEntries(formData.entries()));
+  // Final payload actually submitted (overrides applied).
+  console.log('submitting:', Object.fromEntries(formData.entries()));
 
   const response = await fetch(form.action, {
     method: form.method || 'POST',
