@@ -86,12 +86,6 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
               {...register('taskOrderName')}
             />
           </Field>
-          <Field label="Purchase Order" htmlFor="purchase-order" labelWidth="w-32" orientation="row">
-            <TextInput
-              id="purchase-order"
-              {...register('purchaseOrder')}
-            />
-          </Field>
           <Field label="Project" htmlFor="project" labelWidth="w-32" orientation="row">
             <Controller
               name="project"
@@ -137,6 +131,12 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
                   onChange={field.onChange}
                 />
               )}
+            />
+          </Field>
+          <Field label="Customer Reference" htmlFor="purchase-order" labelWidth="w-32" orientation="row">
+            <TextInput
+              id="purchase-order"
+              {...register('purchaseOrder')}
             />
           </Field>
     </div>
