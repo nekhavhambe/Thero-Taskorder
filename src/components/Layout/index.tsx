@@ -66,7 +66,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
   return (
     <div>
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2 px-3 bg-white">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2">
         <div className="flex items-center gap-2">
           <div className="leading-tight">
             <div className="text-[11px] text-[#008784]">Taskorder</div>
@@ -103,6 +103,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
       </header>
+      <div className="bg-white px-3 pt-1 pb-4 rounded-md mt-2">
       <Toolbar
         aside={
           <StatusPill
@@ -133,6 +134,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         </ToolbarButton>
       </Toolbar>
       <Container>{children ?? <Outlet />}</Container>
+      </div>
     </div>
   );
 };
