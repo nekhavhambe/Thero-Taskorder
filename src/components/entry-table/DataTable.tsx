@@ -125,7 +125,7 @@ function DraggableRow<T>({ row }: { row: Row<T> }) {
         return (
           <td
             key={cell.id}
-            className={`border-r border-slate-200 py-1 px-1.5 text-xs text-slate-700 align-middle ${
+            className={`border-r border-slate-200 py-0 px-1.5 text-xs text-slate-700 align-middle ${
               isDragColumn ? 'text-center' : ''
             }`}
           >

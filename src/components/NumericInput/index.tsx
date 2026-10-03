@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import { X } from 'lucide-react';
 
@@ -15,9 +15,14 @@ export interface NumericInputProps
   step?: number;
 }
 
+/** Digits with an optional leading minus and a single decimal point (allows intermediate states like '12.'). */
+const NUMERIC_PATTERN = /^-?\d*\.?\d*$/;
+const INCOMPLETE_PATTERN = /^(-|\.|-?\.)$/;
+
 /**
- * Numeric-only input (no ERP prefix).
- * Emits `number | null` instead of a string event.
+ * Numeric-only input rendered as type="text" (no native spinners).
+ * Validates on change: complete numbers emit `number`, empty emits `null`,
+ * anything else is shown but reverts on blur.
  */
 export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
   (
@@ -36,6 +41,7 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
       min,
       max,
       step,
+      onBlur,
       ...rest
     },
     ref
@@ -57,29 +63,47 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     const stringValue = value === null || value === '' ? '' : String(value);
     const showClear = clearable && stringValue !== '' && !disabled;
 
+    // Local draft preserves intermediate typing ('12.') that props alone would collapse.
+    const [draft, setDraft] = useState<string | null>(null);
+    const displayValue = draft ?? stringValue;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      if (raw === '') {
+        setDraft(null);
+        onChange(null);
+        return;
+      }
+      if (!NUMERIC_PATTERN.test(raw) || INCOMPLETE_PATTERN.test(raw)) {
+        // Invalid: show it but don't emit; blur snaps back to the last valid value.
+        setDraft(raw);
+        return;
+      }
+      setDraft(raw);
+      onChange(Number(raw));
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      setDraft(null);
+      onBlur?.(e);
+    };
+
     return (
       <div className="relative flex items-center w-full group">
         <input
           ref={ref}
           id={id}
           name={name}
-          type="number"
+          type="text"
           inputMode="decimal"
-          value={stringValue}
+          value={displayValue}
           min={min}
           max={max}
           step={step}
           disabled={disabled}
           placeholder={placeholder}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === '') {
-              onChange(null);
-              return;
-            }
-            const parsed = Number(raw);
-            onChange(Number.isNaN(parsed) ? null : parsed);
-          }}
+          onChange={handleChange}
+          onBlur={handleBlur}
           className={`${baseStyles} ${variantStyles} ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           } ${className} placeholder:text-slate-400 placeholder:font-normal`}
