@@ -63,7 +63,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
             start_date: v.startDate,
             end_date: v.endDate,
             project: v.project,
-            task_description: 'martin is boss',
+            task_description: v.taskOrderName,
           },
         }).catch((err) => console.error(err));
       } else if (action === 'generate' || action === 'issue') onSubmit?.(getValues());
