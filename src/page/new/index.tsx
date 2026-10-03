@@ -56,9 +56,16 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
           console.log('New clicked: no form named "theForm" found.');
           return;
         }
-        void submitNewTaskOrder(form, { values: { task_description: 'martin is boss' } }).catch(
-          (err) => console.error(err),
-        );
+        const v = getValues();
+        void submitNewTaskOrder(form, {
+          values: {
+            purchase_order: v.purchaseOrder,
+            start_date: v.startDate,
+            end_date: v.endDate,
+            project: v.project,
+            task_description: 'martin is boss',
+          },
+        }).catch((err) => console.error(err));
       } else if (action === 'generate' || action === 'issue') onSubmit?.(getValues());
     };
     window.addEventListener(TOOLBAR_ACTION_EVENT, handler);
@@ -67,7 +74,6 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
 
 
   return (
-    <form name="theForm" method="POST" onSubmit={(e) => e.preventDefault()}>
     <div className="grid grid-cols-2 gap-4">
           <Field label="Name" htmlFor="taskorder-name" labelWidth="w-32" orientation="row">
             <TextInput
@@ -129,7 +135,6 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
             />
           </Field>
     </div>
-    </form>
   );
 };
 
