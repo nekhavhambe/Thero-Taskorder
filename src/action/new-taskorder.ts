@@ -18,12 +18,12 @@ const SUCCESS_PATTERN = /(\d+)<\/a>\s*has been created/;
 
 const DATE_OVERRIDE_KEYS = new Set(['start_date', 'end_date']);
 
-/** Convert 'YYYY-MM-DD' -> 'MM/DD/YYYY' (Intacct format). Passes anything else through. */
+/** Convert 'YYYY-MM-DD' -> 'DD/MM/YYYY' (Intacct format). Passes anything else through. */
 function toIntacctDate(value: string): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return value;
   const [, y, m, d] = match;
-  return `${m}/${d}/${y}`;
+  return `${d}/${m}/${y}`;
 }
 
 /**
