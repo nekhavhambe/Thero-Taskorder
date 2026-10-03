@@ -16,6 +16,16 @@ export interface NewTaskOrderResult {
 
 const SUCCESS_PATTERN = /(\d+)<\/a>\s*has been created/;
 
+const DATE_OVERRIDE_KEYS = new Set(['start_date', 'end_date']);
+
+/** Convert 'YYYY-MM-DD' -> 'MM/DD/YYYY' (Intacct format). Passes anything else through. */
+function toIntacctDate(value: string): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return value;
+  const [, y, m, d] = match;
+  return `${m}/${d}/${y}`;
+}
+
 /**
  * Pulls the live DOM form into FormData, applies value overrides,
  * POSTs it via fetch, and redirects to the response URL on success.
@@ -30,7 +40,7 @@ export async function submitNewTaskOrder(
   // All fields retrieved from newForm, before overrides.
   console.log('newForm fields:', Object.fromEntries(formData.entries()));
   for (const [key, value] of Object.entries(values)) {
-    formData.set(key, value);
+    formData.set(key, DATE_OVERRIDE_KEYS.has(key) ? toIntacctDate(value) : value);
   }
 
   // Final payload actually submitted (overrides applied).
