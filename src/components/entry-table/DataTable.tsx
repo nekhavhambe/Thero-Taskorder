@@ -118,6 +118,7 @@ function TextCell({
 
   return (
     <TextInput
+      variant="ghost"
       value={draft ?? value}
       onChange={(e) => setDraft(e.target.value)}
       onFocus={() => {
@@ -282,6 +283,7 @@ export function DataTable<T extends { id: string }>({
           <NumericInput
             mask
             commitOnBlur
+            variant="ghost"
             value={(record[col.key] as number | '' | null) ?? ''}
             onChange={(val) => update({ [col.key]: val } as Partial<T>)}
             min={editor.min}
@@ -464,7 +466,7 @@ export function DataTable<T extends { id: string }>({
   return (
     <div className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Top Controls Bar */}
-      <div className="bg-[#e4edf5] border-b border-slate-300 px-3 py-1.5 flex items-center justify-between min-h-[32px]">
+      <div className="bg-white border-b border-slate-300 px-3 py-1.5 flex items-center justify-between min-h-[32px]">
         <div className="flex items-center gap-3">
           {toolbarExtra}
 
@@ -485,7 +487,7 @@ export function DataTable<T extends { id: string }>({
           <table className="w-full border-collapse text-left" style={{ minWidth }}>
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="bg-[#edf3f8] border-b border-slate-300 text-[11px] leading-tight text-slate-700 select-none">
+                <tr key={headerGroup.id} className="bg-white border-b border-slate-300 text-[11px] leading-tight text-slate-700 select-none">
                   {headerGroup.headers.map((header) => (
                     <th key={header.id} style={{ width: header.getSize() }} className="border-r border-slate-300 py-2.5 px-3 font-semibold align-middle">
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -513,7 +515,7 @@ export function DataTable<T extends { id: string }>({
 
             {hasFooter && (
               <tfoot>
-                <tr className="bg-[#edf3f8]/90 border-t-2 border-slate-300 text-xs font-semibold text-slate-800">
+                <tr className="bg-white border-t-2 border-slate-300 text-xs font-semibold text-slate-800">
                   {reorderable && <td className="border-r border-slate-200 py-2.5 px-2"></td>}
                   {showRowNumbers && <td className="border-r border-slate-200 py-2.5 px-2"></td>}
                   {columns.map((col) => (
@@ -535,7 +537,7 @@ export function DataTable<T extends { id: string }>({
       </div>
 
       {/* Footer bar with pagination */}
-      <div className="bg-[#edf3f8] border-t border-slate-300 px-4 py-2 flex items-center justify-between">
+      <div className="bg-white border-t border-slate-300 px-4 py-2 flex items-center justify-between">
         <div className="text-[11px] text-slate-500 font-medium">
           Showing {visibleRows.length > 0 ? pagination.pageIndex * pagination.pageSize + 1 : 0} -{' '}
           {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalRowsCount)} of {totalRowsCount} rows

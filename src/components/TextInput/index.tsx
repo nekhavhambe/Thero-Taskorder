@@ -3,7 +3,7 @@ import type { InputHTMLAttributes } from 'react';
 import { X } from 'lucide-react';
 
 export interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
-  variant?: 'underline' | 'outline';
+  variant?: 'underline' | 'outline' | 'ghost';
   clearable?: boolean;
   onClear?: () => void;
   hasError?: boolean;
@@ -34,6 +34,12 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             hasError
               ? 'border-red-500 focus:border-red-600'
               : 'border-slate-300 hover:border-slate-400 focus:border-[#008784]'
+          } rounded-none px-0.5`
+        : variant === 'ghost'
+        ? `bg-transparent border-b ${
+            hasError
+              ? 'border-red-500 focus:border-red-600'
+              : 'border-transparent hover:border-slate-300 focus:border-[#008784]'
           } rounded-none px-0.5`
         : `bg-white border ${
             hasError
