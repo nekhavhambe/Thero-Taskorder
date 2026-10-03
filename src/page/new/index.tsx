@@ -133,7 +133,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
               )}
             />
           </Field>
-          <Field label="Customer Reference" htmlFor="purchase-order" labelWidth="w-32" orientation="row">
+          <Field label="Customer Reference" htmlFor="purchase-order" labelWidth="w-40" orientation="row">
             <TextInput
               id="purchase-order"
               {...register('purchaseOrder')}
