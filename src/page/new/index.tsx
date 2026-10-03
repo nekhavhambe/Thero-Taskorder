@@ -57,6 +57,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
           return;
         }
         const v = getValues();
+        console.log('hook values:', v);
         void submitNewTaskOrder(form, {
           values: {
             purchase_order: v.purchaseOrder,
