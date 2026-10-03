@@ -154,7 +154,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
             />
           </Field>
     </div>
-    <div className="mt-6">
+    <div className="mt-6 -mx-6">
       <RequisitionTable
         data={entries}
         setData={setEntries}
