@@ -66,7 +66,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
   return (
     <div>
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2 px-3 bg-white">
         <div className="flex items-center gap-2">
           <div className="leading-tight">
             <div className="text-[11px] text-[#008784]">Taskorder</div>
