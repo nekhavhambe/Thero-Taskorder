@@ -11,6 +11,7 @@ export interface Project {
   id: string;
   name: string;
   reference?: string;
+  currency?: string;
 }
 
 export interface SelectOption {

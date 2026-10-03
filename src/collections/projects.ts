@@ -1,5 +1,6 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/react-db';
 import type { Project } from '../components/types';
+import { fetchIntacctProjects } from '../services/projectsApi';
 
 export const PROJECT_STORAGE_KEY = 'thero-projects';
 
@@ -69,3 +70,31 @@ export function createProject(name: string): Project {
   projectCollection.insert(project);
   return project;
 }
+
+/**
+ * Pulls the live PROJECT list from Intacct and upserts it into the collection.
+ * Local-only rows (e.g. created via the autocomplete) are preserved.
+ * Throws when there is no Intacct session — callers should fall back to seeds.
+ */
+export async function refreshProjectsFromIntacct(): Promise<Project[]> {
+  const rows = await fetchIntacctProjects();
+  await projectCollection.preload();
+  for (const row of rows) {
+    const existing = projectCollection.get(row.id);
+    if (existing) {
+      projectCollection.update(row.id, (draft) => {
+        draft.name = row.name;
+        draft.currency = row.currency;
+      });
+    } else {
+      projectCollection.insert(row);
+    }
+  }
+  return rows;
+}
+
+// Sync live rows on startup when running inside Intacct; offline/standalone
+// keeps working on the seeded rows.
+void refreshProjectsFromIntacct().catch((err) => {
+  console.warn('Intacct project sync skipped:', (err as Error).message);
+});

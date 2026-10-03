@@ -79,7 +79,7 @@ export const TaskOrderHeader: FC<TaskOrderHeaderProps> = ({
 
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[7fr_4fr] gap-4">
+    <div className="grid grid-cols-2 gap-4">
           <Field label="Name" htmlFor="taskorder-name" labelWidth="w-40" orientation="row">
             <TextInput
               id="taskorder-name"

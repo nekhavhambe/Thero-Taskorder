@@ -103,7 +103,8 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
       </header>
-      <div className="bg-white px-3 pt-1 pb-4 rounded-md mt-2">
+      <div className="bg-white px-3 pt-1 pb-4 rounded-md mt-2 grid grid-cols-[70%_40%]">
+    <div>
       <Toolbar
         aside={
           <StatusPill
@@ -134,6 +135,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         </ToolbarButton>
       </Toolbar>
       <Container>{children ?? <Outlet />}</Container>
+      </div>
       </div>
     </div>
   );
