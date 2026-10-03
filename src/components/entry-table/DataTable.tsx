@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   flexRender,
@@ -96,6 +96,46 @@ export interface DataTableProps<T extends { id: string }> {
 }
 
 // ==========================================
+// CELLS (local draft + blur commit: parents never re-render mid-type,
+// so focus is bulletproof and masked values format on blur)
+// ==========================================
+
+function TextCell({
+  value,
+  placeholder,
+  onCommit,
+}: {
+  value: string;
+  placeholder?: string;
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) setDraft(null);
+  }, [value]);
+
+  return (
+    <TextInput
+      value={draft ?? value}
+      onChange={(e) => setDraft(e.target.value)}
+      onFocus={() => {
+        focusedRef.current = true;
+        setDraft(value);
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        const next = draft;
+        setDraft(null);
+        if (next !== null && next !== value) onCommit(next);
+      }}
+      placeholder={placeholder ?? ''}
+    />
+  );
+}
+
+// ==========================================
 // DRAGGABLE ROW
 // ==========================================
 
@@ -174,30 +214,36 @@ export function DataTable<T extends { id: string }>({
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const resolveId = getRowId ?? ((row: T) => row.id);
 
+  // Mirror rows in a ref so stable column defs always operate on fresh data
+  // without re-creating (and re-rendering) the whole table per keystroke.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageSize }));
   }, [pageSize]);
 
   const updateRow = (globalIndex: number, patch: Partial<T>) => {
-    onChange(data.map((row, i) => (i === globalIndex ? { ...row, ...patch } : row)));
+    onChange(dataRef.current.map((row, i) => (i === globalIndex ? { ...row, ...patch } : row)));
   };
 
   const handleAddLine = () => {
-    onChange([...data, createRow()]);
+    onChange([...dataRef.current, createRow()]);
   };
 
   const insertRowBelow = (globalIndex: number) => {
-    const updated = [...data];
+    const updated = [...dataRef.current];
     updated.splice(globalIndex + 1, 0, createRow());
     onChange(updated);
   };
 
   const deleteRow = (globalIndex: number) => {
-    if (data.length <= 1) {
+    const current = dataRef.current;
+    if (current.length <= 1) {
       onChange([createRow()]);
       return;
     }
-    onChange(data.filter((_, i) => i !== globalIndex));
+    onChange(current.filter((_, i) => i !== globalIndex));
   };
 
   const sensors = useSensors(
@@ -225,15 +271,17 @@ export function DataTable<T extends { id: string }>({
     switch (editor.kind) {
       case 'text':
         return (
-          <TextInput
+          <TextCell
             value={String(record[col.key] ?? '')}
-            onChange={(e) => update({ [col.key]: e.target.value } as Partial<T>)}
-            placeholder={editor.placeholder ?? ''}
+            placeholder={editor.placeholder}
+            onCommit={(v) => update({ [col.key]: v } as Partial<T>)}
           />
         );
       case 'number':
         return (
           <NumericInput
+            mask
+            commitOnBlur
             value={(record[col.key] as number | '' | null) ?? ''}
             onChange={(val) => update({ [col.key]: val } as Partial<T>)}
             min={editor.min}
@@ -371,8 +419,10 @@ export function DataTable<T extends { id: string }>({
     }
 
     return cols;
+    // Columns stay referentially stable across keystrokes (updaters read via
+    // dataRef) so cells never remount and inputs never lose focus.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, reorderable, removable, showRowNumbers, data, pagination.pageIndex, pagination.pageSize]);
+  }, [columns, reorderable, removable, showRowNumbers, pagination.pageIndex, pagination.pageSize]);
 
   const table = useReactTable({
     data,

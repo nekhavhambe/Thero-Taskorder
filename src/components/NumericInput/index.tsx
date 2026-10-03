@@ -13,11 +13,35 @@ export interface NumericInputProps
   min?: number;
   max?: number;
   step?: number;
+  /**
+   * When true, the blurred display is masked with thousand separators and
+   * exactly 2 decimals (1760 -> '1,760.00', 0.2 -> '0.20'). Editing is raw.
+   */
+  mask?: boolean;
+  /**
+   * When true, nothing is emitted while typing — the parsed value commits on
+   * blur only. Keeps parents from re-rendering (and stealing focus) mid-type.
+   */
+  commitOnBlur?: boolean;
 }
 
 /** Digits with an optional leading minus and a single decimal point (allows intermediate states like '12.'). */
 const NUMERIC_PATTERN = /^-?\d*\.?\d*$/;
 const INCOMPLETE_PATTERN = /^(-|\.|-?\.)$/;
+
+const parseValid = (raw: string): number | null | undefined => {
+  if (raw === '') return null;
+  if (!NUMERIC_PATTERN.test(raw) || INCOMPLETE_PATTERN.test(raw)) return undefined;
+  return Number(raw);
+};
+
+export const formatMasked = (value: number | '' | null): string => {
+  if (value === null || value === '') return '';
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 /**
  * Numeric-only input rendered as type="text" (no native spinners).
@@ -41,7 +65,10 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
       min,
       max,
       step,
+      mask = false,
+      commitOnBlur = false,
       onBlur,
+      onFocus,
       ...rest
     },
     ref
@@ -63,29 +90,45 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     const stringValue = value === null || value === '' ? '' : String(value);
     const showClear = clearable && stringValue !== '' && !disabled;
 
-    // Local draft preserves intermediate typing ('12.') that props alone would collapse.
-    const [draft, setDraft] = useState<string | null>(null);
-    const displayValue = draft ?? stringValue;
+    // Editing session: raw draft while focused, masked/committed value when blurred.
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState('');
+    const displayValue = editing ? draft : mask ? formatMasked(value) : stringValue;
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      setDraft(stringValue);
+      setEditing(true);
+      onFocus?.(e);
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value;
-      if (raw === '') {
-        setDraft(null);
-        onChange(null);
-        return;
-      }
-      if (!NUMERIC_PATTERN.test(raw) || INCOMPLETE_PATTERN.test(raw)) {
-        // Invalid: show it but don't emit; blur snaps back to the last valid value.
+      const parsed = parseValid(raw);
+      if (parsed === undefined) {
+        // Invalid: show it but never emit; blur snaps back to the last valid value.
         setDraft(raw);
         return;
       }
       setDraft(raw);
-      onChange(Number(raw));
+      if (!commitOnBlur) onChange(parsed);
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setDraft(null);
+      if (!commitOnBlur) {
+        setEditing(false);
+      } else {
+        const parsed = parseValid(draft);
+        setEditing(false);
+        if (parsed !== undefined) onChange(parsed);
+      }
       onBlur?.(e);
+    };
+
+    const handleClear = () => {
+      onClear?.();
+      setDraft('');
+      setEditing(false);
+      onChange(null);
     };
 
     return (
@@ -103,6 +146,7 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
           disabled={disabled}
           placeholder={placeholder}
           onChange={handleChange}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           className={`${baseStyles} ${variantStyles} ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
@@ -112,10 +156,7 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
         {showClear && (
           <button
             type="button"
-            onClick={() => {
-              onClear?.();
-              onChange(null);
-            }}
+            onClick={handleClear}
             className="text-slate-400 hover:text-slate-600 p-0.5 ml-1 rounded-full focus:outline-none"
             title="Clear"
           >

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { DataTable } from './DataTable';
 import type { EntryColumn } from './DataTable';
@@ -252,6 +252,7 @@ export const RequisitionTable: React.FC<RequisitionTableProps> = ({
   onImportSuccess,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const columns = useMemo(() => buildLineItemColumns(currency.symbol), [currency.symbol]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -286,7 +287,7 @@ export const RequisitionTable: React.FC<RequisitionTableProps> = ({
       <DataTable<LineItem>
         data={data}
         onChange={(rows) => setData(rows)}
-        columns={buildLineItemColumns(currency.symbol)}
+        columns={columns}
         createRow={() => createBlankRow(`${Date.now()}-${Math.random()}`)}
         pageSize={pageSize}
         onPageSizeChange={onPageSizeChange}
