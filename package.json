@@ -19,7 +19,7 @@
     "@radix-ui/react-select": "^2.3.7",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@tanstack/react-db": "^0.5.1",
-    "@tanstack/react-table": "^9.2.4",
+    "@tanstack/react-table": "^8.21.3",
     "lucide-react": "^1.50.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

@@ -1,13 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
   flexRender,
-  PaginationState,
-  Row,
 } from '@tanstack/react-table';
+import type { ColumnDef, PaginationState, Row } from '@tanstack/react-table';
 import {
   DndContext,
   closestCenter,
@@ -15,8 +13,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
