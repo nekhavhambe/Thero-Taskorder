@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node -e \"import('fs').then((fs) => fs.copyFileSync('dist/index.html', 'dist/404.html'))\" && npm run build:bridge",
+    "build": "tsc -b && vite build && node -e \"import('fs').then((fs) => fs.copyFileSync('dist/index.html', 'dist/404.html'))\" && npm run build:bridge && npm run build:snippet",
     "build:bridge": "vite build --config vite.bridge.config.ts",
+    "build:snippet": "node scripts/build-snippet.mjs",
     "build:pages": "npm run build",
     "build:local": "tsc -b && vite build",
     "predeploy": "npm run build",

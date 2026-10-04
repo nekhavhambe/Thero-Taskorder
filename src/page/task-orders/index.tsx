@@ -370,6 +370,8 @@ export const TaskOrders = () => {
         void submitTaskOrder();
       }}
     >
+      {JSON.stringify({ id, endDate, name, projectId, projectName, projectKey, startDate })}
+      martin
       <input
         type="file"
         ref={fileInputRef}
