@@ -38,3 +38,8 @@ export const vendorCollection = createCollection(
     refetchOnWindowFocus: false,
   }),
 );
+
+// Query collections are on-demand — kick off the first load at import so
+// the dropdown populates without waiting for an explicit preload/refetch.
+// (Failures already alert inside query(); the catch just avoids an unhandled rejection.)
+void vendorCollection.preload().catch(() => {});
