@@ -1,0 +1,11 @@
+<!-- Copy everything below into your parent/host HTML page. -->
+<!-- 1. The app iframe (id must match initParentBridge, default 'intacct'). -->
+<iframe id="intacct" src="https://YOUR-APP-URL/" style="width:100%;height:800px;border:0"></iframe>
+
+<!-- 2. Bridge bundle + init (after the iframe element). -->
+<script src="./bridge/thero-bridge.umd.js"></script>
+<script>
+  // The parent owns the Intacct session; the iframed app has none.
+  window._sess = 'PASTE_INTACCT_SESSION_ID_HERE';
+  TheroBridge.initParentBridge(); // looks up <iframe id="intacct">
+</script>

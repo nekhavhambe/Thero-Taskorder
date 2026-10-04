@@ -1,7 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
-import { Layout, TaskOrderHeader } from './components';
-import { Form } from './page';
+import { Layout, TaskOrders } from './components';
+import { SalesOrder } from './page';
+import { Requisitions } from './page';
+import { Cashflow } from './page';
+import { Tasks } from './page';
+
+function TaskOrderRoute() {
+  return <TaskOrders />;
+}
 
 function App() {
   return (
@@ -9,26 +16,21 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/task-order" replace />} />
+          <Route path="/task-order" element={<TaskOrderRoute />} />
+          <Route path="/requisitions" element={<Requisitions />} />
+          <Route path="/cashflow" element={<Cashflow />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route
-            path="/task-order"
+            path="/sales-order"
             element={
-              <TaskOrderHeader
-                onSubmit={(data) => {
-                  console.log('TaskOrder submitted:', data);
-                }}
-              />
-            }
-          />
-          <Route
-            path="/form"
-            element={
-              <Form
+              <SalesOrder
                 onSave={(data) => {
                   console.log('RFQ saved:', data);
                 }}
               />
             }
           />
+          <Route path="/form" element={<Navigate to="/sales-order" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/task-order" replace />} />
       </Routes>

@@ -35,6 +35,26 @@
   color-scheme: light;
 }
 
+/* Compact horizontal scrollbar for the grid — no extra padding. */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+
 body {
   margin: 0;
   background: #fff;

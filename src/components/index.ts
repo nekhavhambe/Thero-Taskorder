@@ -1,48 +1,43 @@
 // Clean names (no ERP prefix) — preferred imports
-export { FieldLabel } from './FieldLabel';
-export type { FieldLabelProps } from './FieldLabel';
-export { Field } from './Field';
-export type { FieldProps } from './Field';
-export { Layout } from './Layout';
-export { Toolbar, ToolbarButton, StatusPill } from './Toolbar';
-export type { ToolbarProps, ToolbarButtonProps, StatusPillProps } from './Toolbar';
-export { TextInput } from './TextInput';
-export type { TextInputProps } from './TextInput';
-export { NumericInput } from './NumericInput';
-export type { NumericInputProps } from './NumericInput';
-export { Select } from './Select';
-export type { SelectProps } from './Select';
-export { Autocomplete } from './Autocomplete';
-export type { AutocompleteProps } from './Autocomplete';
-export { DatePicker } from './DatePicker';
-export type { DatePickerProps } from './DatePicker';
-export { Checkbox } from './Checkbox';
-export type { CheckboxProps } from './Checkbox';
-export { TaskOrderHeader } from '../page/new';
-export type { TaskOrderHeaderData, TaskOrderHeaderProps } from '../page/new';
+export { Label, FieldLabel } from './forms/label';
+export type { LabelProps, FieldLabelProps } from './forms/label';
+export { Field } from './forms/field';
+export type { FieldProps } from './forms/field';
+export { Layout } from './layouts/layout';
+export { Toolbar, ToolbarButton, StatusPill, StatusChip } from './layouts/toolbar';
+export type { ToolbarProps, ToolbarButtonProps, StatusPillProps, StatusChipProps } from './layouts/toolbar';
+export { TextInput } from './inputs/textinput';
+export type { TextInputProps } from './inputs/textinput';
+export { NumericInput } from './inputs/numericinput';
+export type { NumericInputProps } from './inputs/numericinput';
+export { Select } from './inputs/select';
+export type { SelectProps } from './inputs/select';
+export { Autocomplete } from './inputs/autocomplete';
+export type { AutocompleteProps } from './inputs/autocomplete';
+export { DatePicker } from './inputs/datepicker';
+export type { DatePickerProps } from './inputs/datepicker';
+export { Checkbox } from './inputs/checkbox';
+export type { CheckboxProps } from './inputs/checkbox';
+export { TaskOrders, TaskOrders as TaskOrderHeader } from '../page/task-orders';
+export type { TaskOrderConfig } from '../page/task-orders';
 
-export type { Vendor, SelectOption, RFQFormData } from './types';
-export {
-  AGREEMENT_OPTIONS,
-  CURRENCY_OPTIONS,
-  PAYMENT_TERMS_OPTIONS,
-  DELIVER_TO_OPTIONS,
-  INITIAL_RFQ_DATA,
-} from './data';
+export type { Vendor } from '../collections/vendors';
+export type { SelectOption } from './inputs/select';
+export type { RFQFormData } from '../page/sales-order';
 
 // Backwards-compatible ERP* aliases (old src/componets/index.tsx names)
-export { FieldLabel as FieldLabelWithTooltip } from './FieldLabel';
-export type { FieldLabelProps as FieldLabelWithTooltipProps } from './FieldLabel';
-export { FieldLabel as ERPFieldLabel } from './FieldLabel';
-export { Field as ERPField, Field as ERPFormRow } from './Field';
-export type { FieldProps as ERPFormRowProps } from './Field';
-export { TextInput as ERPTextInput } from './TextInput';
-export type { TextInputProps as ERPTextInputProps } from './TextInput';
-export { Select as ERPSelect } from './Select';
-export type { SelectProps as ERPSelectProps } from './Select';
-export { Autocomplete as ERPAutocomplete } from './Autocomplete';
-export type { AutocompleteProps as ERPAutocompleteProps } from './Autocomplete';
-export { DatePicker as ERPDatePicker } from './DatePicker';
-export type { DatePickerProps as ERPDatePickerProps } from './DatePicker';
-export { Checkbox as ERPCheckbox } from './Checkbox';
-export type { CheckboxProps as ERPCheckboxProps } from './Checkbox';
+export { Label as FieldLabelWithTooltip } from './forms/label';
+export type { LabelProps as FieldLabelWithTooltipProps } from './forms/label';
+export { Label as ERPFieldLabel } from './forms/label';
+export { Field as ERPField, Field as ERPFormRow } from './forms/field';
+export type { FieldProps as ERPFormRowProps } from './forms/field';
+export { TextInput as ERPTextInput } from './inputs/textinput';
+export type { TextInputProps as ERPTextInputProps } from './inputs/textinput';
+export { Select as ERPSelect } from './inputs/select';
+export type { SelectProps as ERPSelectProps } from './inputs/select';
+export { Autocomplete as ERPAutocomplete } from './inputs/autocomplete';
+export type { AutocompleteProps as ERPAutocompleteProps } from './inputs/autocomplete';
+export { DatePicker as ERPDatePicker } from './inputs/datepicker';
+export type { DatePickerProps as ERPDatePickerProps } from './inputs/datepicker';
+export { Checkbox as ERPCheckbox } from './inputs/checkbox';
+export type { CheckboxProps as ERPCheckboxProps } from './inputs/checkbox';

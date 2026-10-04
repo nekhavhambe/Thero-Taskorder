@@ -3,34 +3,28 @@ import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/react-db";
 import { query } from "../services/intacct/query";
 
-export interface Project {
+export interface StandardTask {
   RECORDNO: string;
-  PROJECTID: string;
+  TASKID: string;
   NAME: string;
-  CURRENCY?: string;
+  DESCRIPTION?: string;
   STATUS?: string;
-  PROJECTSTATUS?: string;
-  CUSTOMERID?: string;
-  CUSTOMERNAME?: string;
-  BEGINDATE?: string;
-  ENDDATE?: string;
 }
 
 
 export const client = new QueryClient();
-export const projectCollection = createCollection(
+export const standardTaskCollection = createCollection(
   queryCollectionOptions({
-    id: "projects",
-    queryKey: ["projects"],
+    id: "standard-tasks",
+    queryKey: ["standard-tasks"],
     queryFn: async () => {
       try {
         const { data } = await query({
-          object: "PROJECT",
-          fields: ["RECORDNO","PROJECTID","NAME","CURRENCY","STATUS"],
-          filters: [{ STATUS: "active" }],
-          orderBy: "PROJECTID",
+          object: "STANDARDTASK",
+          fields: ["RECORDNO","TASKID","NAME","DESCRIPTION", "STATUS"],
+          orderBy: "TASKID",
         });
-
+   
         return data || [];
       } catch (err) {
         return [];

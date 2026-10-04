@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>thero-bridge host demo (parent page)</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 16px; color: #1e293b; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; align-items: center; }
+    button { padding: 6px 12px; font-size: 13px; cursor: pointer; }
+    input[type=text] { width: 420px; max-width: 90vw; padding: 6px; font-size: 13px; }
+    #log { border: 1px solid #cbd5e1; min-height: 140px; max-height: 260px; overflow-y: auto;
+           padding: 8px; font: 12px/1.5 monospace; white-space: pre-wrap; background: #f8fafc; }
+    iframe { width: 100%; height: 70vh; border: 1px solid #94a3b8; margin-top: 8px; }
+    .ok { color: #047857; } .err { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <h2>thero-bridge host demo</h2>
+  <p>This page plays the <b>parent</b>: it owns the Intacct session
+  (<code>window._sess</code>) and serves the iframed app below over the bridge.</p>
+  <div class="row">
+    <label>Session <input id="sess" type="text" placeholder="paste Intacct _sess (leave empty = no session)" /></label>
+    <button id="applySess">Apply session</button>
+  </div>
+  <div class="row">
+    <button id="push">push session.present</button>
+  </div>
+  <div id="log"></div>
+  <iframe id="consumer" title="taskorder consumer"></iframe>
+
+  <script type="module">
+    const logEl = document.getElementById('log');
+    const log = (msg, cls = '') => {
+      const div = document.createElement('div');
+      if (cls) div.className = cls;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    // dist build first, dev source fallback.
+    let bridge = null;
+    try {
+      bridge = await import('./bridge/thero-bridge.es.js');
+      log('loaded dist bridge module (thero-bridge.es.js)');
+    } catch {
+      bridge = await import('/src/bridge/index.ts');
+      log('loaded bridge from dev source (/src/bridge/index.ts)');
+    }
+
+    document.getElementById('applySess').onclick = () => {
+      window._sess = document.getElementById('sess').value.trim() || undefined;
+      log(`session ${window._sess ? 'applied' : 'cleared'}`, window._sess ? 'ok' : 'err');
+    };
+
+    const frame = document.getElementById('consumer');
+    const host = bridge.createBridgeHost({
+      target: frame,
+      allowedOrigins: ['*'], // demo only — lock this down in production
+      actions: bridge.createDefaultActions(),
+    });
+    host.register('ping', async () => ({ pong: true, at: new Date().toISOString() }));
+    log('host listening (actions: ping, session.get, intacct.request, projects.list, standardTasks.list)');
+    window.__bridgeHost = host; // handy for console poking: __bridgeHost.emit(...)
+
+    // App sits next to this page in dist, at dev root in `npm run dev`.
+    frame.src = new URL('./index.html', window.location.href).href;
+
+    document.getElementById('push').onclick = () => {
+      host.emit('session.present', { present: !!window._sess });
+      log(`pushed session.present (present=${!!window._sess})`);
+    };
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.ns === 'thero-bridge') {
+        log(`wire: ${e.data.kind}${e.data.action ? ` ${e.data.action}` : ''}${e.data.name ? ` ${e.data.name}` : ''} (origin ${e.origin})`);
+      }
+    });
+  </script>
+</body>
+</html>

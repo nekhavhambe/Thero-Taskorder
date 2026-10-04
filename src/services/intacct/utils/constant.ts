@@ -1,0 +1,1 @@
+export const ENDPOINT = 'https://www-p04.intacct.com/ia/xml/ajaxgw.phtml';

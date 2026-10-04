@@ -1,0 +1,120 @@
+- generic [active] [ref=f7e1]:
+  - heading "thero-bridge host demo" [level=2] [ref=f7e2]
+  - paragraph [ref=f7e3]:
+    - text: "This page plays the parent: it owns the Intacct session ("
+    - code [ref=f7e4]: window._sess
+    - text: ) and serves the iframed app below over the bridge.
+  - generic [ref=f7e5]:
+    - generic [ref=f7e6]:
+      - text: Session
+      - textbox "Session" [ref=f7e7]:
+        - /placeholder: paste Intacct _sess (leave empty = no session)
+    - button "Apply session" [ref=f7e8] [cursor=pointer]
+  - button "push session.present" [ref=f7e10] [cursor=pointer]
+  - iframe [ref=f7e12]:
+    - generic [ref=f8e4]:
+      - banner [ref=f8e5]:
+        - generic [ref=f8e7]:
+          - generic [ref=f8e8]: Taskorder
+          - generic [ref=f8e9]: Abigail Peterson
+        - navigation "Record sections" [ref=f8e10]:
+          - button "Task Order 1" [ref=f8e11]:
+            - generic [ref=f8e12]:
+              - generic [ref=f8e13]: Task Order
+              - generic [ref=f8e14]: "1"
+          - button "Sales Order 1" [ref=f8e15]:
+            - generic [ref=f8e16]:
+              - generic [ref=f8e17]: Sales Order
+              - generic [ref=f8e18]: "1"
+          - button "Requisitions 1" [ref=f8e19]:
+            - generic [ref=f8e20]:
+              - generic [ref=f8e21]: Requisitions
+              - generic [ref=f8e22]: "1"
+          - button "Cashflow Forecasting 1" [ref=f8e23]:
+            - generic [ref=f8e24]:
+              - generic [ref=f8e25]: Cashflow Forecasting
+              - generic [ref=f8e26]: "1"
+          - button "Tasks 1" [ref=f8e27]:
+            - generic [ref=f8e28]:
+              - generic [ref=f8e29]: Tasks
+              - generic [ref=f8e30]: "1"
+          - button "Estimates 1" [ref=f8e31]:
+            - generic [ref=f8e32]:
+              - generic [ref=f8e33]: Estimates
+              - generic [ref=f8e34]: "1"
+          - button "Related 1" [ref=f8e35]:
+            - generic [ref=f8e36]:
+              - generic [ref=f8e37]: Related
+              - generic [ref=f8e38]: "1"
+      - generic [ref=f8e40]:
+        - generic [ref=f8e41]:
+          - generic [ref=f8e42]:
+            - button "New" [ref=f8e43]
+            - button "Generate Sales Order" [ref=f8e44]
+            - button "Issue Requisition" [ref=f8e45]
+            - button "Allocate Tasks" [ref=f8e46]
+            - button "Update Budget" [ref=f8e47]
+          - generic [ref=f8e48]: Active
+        - generic [ref=f8e51]:
+          - generic [ref=f8e52]:
+            - generic [ref=f8e53]:
+              - generic [ref=f8e54]: Name
+              - textbox "Name" [ref=f8e59]
+            - generic [ref=f8e60]:
+              - generic [ref=f8e61]: Project
+              - textbox "Project" [ref=f8e68]:
+                - /placeholder: TS-23-000033--Aries-Upington 400kV
+            - generic [ref=f8e71]:
+              - generic [ref=f8e72]: Start Date
+              - generic [ref=f8e75]: Select date...
+            - generic [ref=f8e82]:
+              - generic [ref=f8e83]: End Date
+              - generic [ref=f8e86]: Select date...
+            - generic [ref=f8e93]:
+              - generic [ref=f8e94]: Customer Reference
+              - textbox "Customer Reference" [ref=f8e99]
+          - generic [ref=f8e101]:
+            - generic [ref=f8e103]:
+              - button "Import" [ref=f8e104] [cursor=pointer]
+              - button "Add Line" [ref=f8e109] [cursor=pointer]
+            - generic [ref=f8e112]:
+              - table [ref=f8e113]:
+                - rowgroup [ref=f8e114]:
+                  - row [ref=f8e115]:
+                    - columnheader "Reorder" [ref=f8e116]
+                    - columnheader "#" [ref=f8e118]
+                    - columnheader "Description" [ref=f8e120]
+                    - columnheader "Task" [ref=f8e122]
+                    - columnheader "Qty" [ref=f8e124]
+                    - columnheader "Rate" [ref=f8e126]
+                    - columnheader "Value" [ref=f8e128]
+                    - columnheader "Actions" [ref=f8e130]
+                - rowgroup [ref=f8e132]:
+                  - row [ref=f8e133]:
+                    - cell [ref=f8e134]:
+                      - button "Drag to reorder row" [ref=f8e135]
+                    - cell "1" [ref=f8e140]
+                    - cell [ref=f8e142]:
+                      - textbox [ref=f8e145]
+                    - cell [ref=f8e146]:
+                      - textbox "Select a Task" [ref=f8e151]
+                    - cell [ref=f8e154]:
+                      - textbox "0" [ref=f8e157]: "0.00"
+                    - cell [ref=f8e158]:
+                      - textbox "0" [ref=f8e161]: "0.00"
+                    - cell "R 0.00" [ref=f8e162]
+                    - cell [ref=f8e165]:
+                      - generic [ref=f8e166]:
+                        - button "Insert line below" [ref=f8e167] [cursor=pointer]
+                        - button "Delete line" [ref=f8e169] [cursor=pointer]
+                - rowgroup [ref=f8e173]:
+                  - row [ref=f8e174]:
+                    - cell [ref=f8e175]
+                    - cell [ref=f8e176]
+                    - cell "Total" [ref=f8e177]
+                    - cell [ref=f8e178]
+                    - cell "0" [ref=f8e179]
+                    - cell [ref=f8e180]
+                    - cell "R 0.00" [ref=f8e181]
+                    - cell [ref=f8e182]
+              - status [ref=f8e183]
