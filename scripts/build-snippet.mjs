@@ -16,8 +16,6 @@ const snippet = `<!-- Copy everything below into your parent/host HTML page. -->
 <!-- 2. Bridge bundle + init (after the iframe element). -->
 <script>${bundle}</script>
 <script>
-  // The parent owns the Intacct session; the iframed app has none.
-  window._sess = 'PASTE_INTACCT_SESSION_ID_HERE';
   TheroBridge.initParentBridge(); // looks up <iframe id="intacct">
 </script>
 `;

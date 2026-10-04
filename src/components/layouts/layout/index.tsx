@@ -7,6 +7,7 @@ import { StatusChip, Toolbar, ToolbarButton, fireToolbarAction } from '../toolba
 import type { ToolbarAction } from '../toolbar';
 import { requestTableImport, requestTableUpload } from '../../tables/entry-table';
 import Container from '../container';
+import { useParams } from '../../../hook/params';
 
 interface HeaderTab {
   id: string;
@@ -39,6 +40,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
 
   useEffect(() => {
     if (location.pathname.startsWith('/form')) setActiveTab('sales-order');
@@ -76,7 +78,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         <div className="flex items-center gap-2">
           <div className="leading-tight">
             <div className="text-[11px] text-[#008784]">Taskorder</div>
-            <div className="text-sm font-bold text-slate-900">Abigail Peterson</div>
+            <div className="text-sm font-bold text-slate-900">{params.name || 'New Task Order'}</div>
           </div>
           <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
             <Popover.Trigger asChild>

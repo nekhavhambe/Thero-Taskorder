@@ -7,6 +7,7 @@ export interface ParentBridgeHandle {
 
 
 export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
+  alert('initParentBridge');
   const iframe = document.getElementById(iframeId) as HTMLIFrameElement | null;
   if (!iframe) throw new Error(`Parent bridge: no iframe found with id "${iframeId}".`);
   const remoteWindow = iframe.contentWindow;

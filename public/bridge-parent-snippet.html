@@ -11,9 +11,7 @@
     <authentication><sessionid>${j()}</sessionid></authentication>
     <content>${e}</content>
   </operation>
-</request>`}async function B(e){let t=j(),n=await(await fetch(`${R}?.sess=${encodeURIComponent(t)}`,{method:`POST`,headers:{"content-type":`application/x-www-form-urlencoded`},body:new URLSearchParams({xmlrequest:z(e)}),credentials:`include`})).text(),r=new DOMParser().parseFromString(n,`text/xml`);return{text:n,xml:r,status:r.querySelector(`result > status`)?.textContent??void 0}}function V(e=`intacct`){let t=document.getElementById(e);if(!t)throw Error(`Parent bridge: no iframe found with id "${e}".`);let n=t.contentWindow;if(!n)throw Error(`Parent bridge: iframe has no contentWindow yet.`);let r=k({messenger:new A({remoteWindow:n,allowedOrigins:[`*`]}),methods:{async request(e){let{text:t,status:n}=await B(String(e??``));return{text:t,status:n??null}}}});return{destroy:()=>r.destroy()}}e.initParentBridge=V,e.installBridgeChild=L,e.intacctViaBridge=I,e.isEmbedded=F});</script>
+</request>`}async function B(e){let t=j(),n=await(await fetch(`${R}?.sess=${encodeURIComponent(t)}`,{method:`POST`,headers:{"content-type":`application/x-www-form-urlencoded`},body:new URLSearchParams({xmlrequest:z(e)}),credentials:`include`})).text(),r=new DOMParser().parseFromString(n,`text/xml`);return{text:n,xml:r,status:r.querySelector(`result > status`)?.textContent??void 0}}function V(e=`intacct`){alert(`initParentBridge`);let t=document.getElementById(e);if(!t)throw Error(`Parent bridge: no iframe found with id "${e}".`);let n=t.contentWindow;if(!n)throw Error(`Parent bridge: iframe has no contentWindow yet.`);let r=k({messenger:new A({remoteWindow:n,allowedOrigins:[`*`]}),methods:{async request(e){let{text:t,status:n}=await B(String(e??``));return{text:t,status:n??null}}}});return{destroy:()=>r.destroy()}}e.initParentBridge=V,e.installBridgeChild=L,e.intacctViaBridge=I,e.isEmbedded=F});</script>
 <script>
-  // The parent owns the Intacct session; the iframed app has none.
-  window._sess = 'PASTE_INTACCT_SESSION_ID_HERE';
   TheroBridge.initParentBridge(); // looks up <iframe id="intacct">
 </script>
