@@ -17,7 +17,7 @@ function getConnection(): Connection<ParentBridgeApi> {
       remoteWindow: window.parent,
       allowedOrigins: ['*'],
     });
-    connection = connect<ParentBridgeApi>({ messenger, methods: {}, timeout: 30000 });
+    connection = connect<ParentBridgeApi>({ messenger, methods: {}, timeout: 10000 });
   }
   return connection;
 }
@@ -78,7 +78,10 @@ export function installBridgeChild(): InstalledBridgeChild | null {
   }
   alert('[child] embedded without session — bridge mode');
 
-  getConnection(); // Warm up; calls await the handshake when needed.
+  getConnection().promise.then(
+    () => alert('[child] bridge CONNECTED to parent'),
+    (err) => alert(`[child] bridge CONNECT FAILED: ${(err as Error).message}`),
+  );
 
   let uninstalled = false;
   return {

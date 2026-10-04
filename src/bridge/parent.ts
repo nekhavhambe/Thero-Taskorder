@@ -1,6 +1,7 @@
 import { connect, WindowMessenger } from 'penpal';
 import { intacct } from '../services/intacct';
 import { describeIntacctBody } from '../services/intacct/utils/debug';
+import { session } from '../services/intacct/utils/session';
 
 export interface ParentBridgeHandle {
   destroy(): void;
@@ -8,7 +9,7 @@ export interface ParentBridgeHandle {
 
 
 export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
-  alert('initParentBridge');
+  alert('initParentBridge---' + session());
   const iframe = document.getElementById(iframeId) as HTMLIFrameElement | null;
   if (!iframe) throw new Error(`Parent bridge: no iframe found with id "${iframeId}".`);
   const remoteWindow = iframe.contentWindow;
@@ -31,6 +32,10 @@ export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
       },
     },
   });
+  connection.promise.then(
+    () => alert('[parent] bridge CONNECTED to child'),
+    (err) => alert(`[parent] bridge CONNECT FAILED: ${(err as Error).message}`),
+  );
 
   return { destroy: () => connection.destroy() };
 }
