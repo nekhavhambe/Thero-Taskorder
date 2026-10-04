@@ -58,18 +58,33 @@ export async function query(
       </function>`;
 
   // No session means this page runs iframed — route through the parent bridge.
-  const { xml, status, text } = hasSession()
-    ? await intacct(fnBody)
-    : await intacctViaBridge(fnBody);
+  const via = hasSession() ? 'direct' : 'bridge';
+  alert(`[query] ${object} via ${via}`);
+
+  let xml: Document;
+  let status: string | undefined;
+  let text: string;
+  try {
+    const res = via === 'direct' ? await intacct(fnBody) : await intacctViaBridge(fnBody);
+    xml = res.xml;
+    status = res.status;
+    text = res.text;
+  } catch (err) {
+    alert(`[query] ${object} via ${via} FAILED: ${(err as Error).message}`);
+    throw err;
+  }
 
   if (status !== 'success') {
+    alert(`[query] ${object} status=${status} FAILED: ${text.slice(0, 200)}`);
     throw new Error(`${object} query failed: ${text.slice(0, 500)}`);
   }
 
   const meta = XMLParser.listMeta(xml);
+  const data = [...xml.getElementsByTagName(object)].map((rec) => XMLParser.elementToJson(rec));
+  alert(`[query] ${object} status=${status} rows=${data.length}`);
 
   return {
-    data: [...xml.getElementsByTagName(object)].map((rec) => XMLParser.elementToJson(rec)),
+    data,
     limit: size,
     offset: meta.offset || start,
     count: meta.count,

@@ -2,6 +2,7 @@ import { connect, WindowMessenger } from 'penpal';
 import type { Connection, Methods } from 'penpal';
 import type { IntacctFunctionResult } from '../services/intacct';
 import { hasSession } from '../services/intacct/utils/session';
+import { describeIntacctBody } from '../services/intacct/utils/debug';
 
 /** Methods the parent page exposes to the iframed app. */
 export interface ParentBridgeApi extends Methods {
@@ -36,15 +37,22 @@ export function isEmbedded(): boolean {
  * is false — i.e. this page runs iframed without its own session.
  */
 export async function intacctViaBridge(body: string): Promise<IntacctFunctionResult> {
-  const parent = await getConnection().promise;
-  const res = await parent.request(body);
-  const text = res?.text ?? '';
-  const xml = new DOMParser().parseFromString(text, 'text/xml');
-  return {
-    text,
-    xml,
-    status: res?.status ?? undefined,
-  };
+  alert(`[child>parent] ${describeIntacctBody(body)}`);
+  try {
+    const parent = await getConnection().promise;
+    const res = await parent.request(body);
+    const text = res?.text ?? '';
+    const xml = new DOMParser().parseFromString(text, 'text/xml');
+    alert(`[child<parent] status=${res?.status ?? '?'} chars=${text.length}`);
+    return {
+      text,
+      xml,
+      status: res?.status ?? undefined,
+    };
+  } catch (err) {
+    alert(`[child>parent] FAILED: ${(err as Error).message}`);
+    throw err;
+  }
 }
 
 export interface InstalledBridgeChild {
@@ -60,8 +68,15 @@ export interface InstalledBridgeChild {
  * Call once at startup (e.g. in main.tsx).
  */
 export function installBridgeChild(): InstalledBridgeChild | null {
-  if (typeof window === 'undefined' || !isEmbedded()) return null;
-  if (hasSession()) return null; // Own session — no bridge needed.
+  if (typeof window === 'undefined' || !isEmbedded()) {
+    alert('[child] standalone page — direct Intacct');
+    return null;
+  }
+  if (hasSession()) {
+    alert('[child] embedded with own session — direct Intacct');
+    return null; // Own session — no bridge needed.
+  }
+  alert('[child] embedded without session — bridge mode');
 
   getConnection(); // Warm up; calls await the handshake when needed.
 

@@ -1,5 +1,6 @@
 import { connect, WindowMessenger } from 'penpal';
 import { intacct } from '../services/intacct';
+import { describeIntacctBody } from '../services/intacct/utils/debug';
 
 export interface ParentBridgeHandle {
   destroy(): void;
@@ -18,8 +19,15 @@ export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
     messenger,
     methods: {
       async request(fnBody: string) {
-        const { text, status } = await intacct(String(fnBody ?? ''));
-        return { text, status: status ?? null };
+        alert(`[parent] request ${describeIntacctBody(String(fnBody ?? ''))}`);
+        try {
+          const { text, status } = await intacct(String(fnBody ?? ''));
+          alert(`[parent] response status=${status ?? '?'} chars=${text.length}`);
+          return { text, status: status ?? null };
+        } catch (err) {
+          alert(`[parent] FAILED: ${(err as Error).message}`);
+          throw err;
+        }
       },
     },
   });
