@@ -5,7 +5,7 @@ import { SalesOrder } from "./page";
 import { Requisitions } from "./page";
 import { Cashflow } from "./page";
 import { Tasks } from "./page";
-import { useParams } from "./hook/params";
+import { useParams, toIsoDateParam } from "./hook/params";
 import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 
@@ -23,7 +23,7 @@ function App() {
   const defaultValues = useMemo<TaskOrderConfig>(
     () => ({
       id: id ?? "",
-      date: { start: startDate ?? "", end: endDate ?? "" },
+      date: { start: toIsoDateParam(startDate), end: toIsoDateParam(endDate) },
       name: name ?? "",
       order: "",
       project: {
