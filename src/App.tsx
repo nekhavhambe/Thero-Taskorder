@@ -8,7 +8,7 @@ import { Tasks } from "./page";
 import { useParams, toIsoDateParam } from "./hook/params";
 import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
-import { useLiveQuery } from "@tanstack/react-db";
+import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import { taskOrderCollection } from "./collections";
 
 export interface TaskOrderConfig {
@@ -22,9 +22,7 @@ export interface TaskOrderConfig {
 function App() {
 
   const { id, endDate, name, projectId, projectName, projectKey, startDate } = useParams();
-
-
-  const taskorder = useLiveQuery((q)=> q.from({TaskOrders: taskOrderCollection}));
+  const taskorder = useLiveSuspenseQuery((q)=> q.from({TaskOrders: taskOrderCollection}));
 
   const defaultValues = useMemo<TaskOrderConfig>(
     () => ({
@@ -48,7 +46,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      {JSON.stringify(taskorder.data.length, null, 2)}
+      {JSON.stringify(taskorder.data, null, 2)}
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
