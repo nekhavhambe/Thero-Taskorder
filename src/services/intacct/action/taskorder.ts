@@ -42,7 +42,10 @@ export async function submitTaskOrderForm(values: Record<string, string>): Promi
   });
 
   const result = await response.text();
-  alert(`[taskorder create] status=${response.status} chars=${result.length}`);
+  alert(`[taskorder create] status=${response.status} chars=${result.length} redirected=${response.redirected}`);
+  if (response.redirected && response.url) {
+    window.location.assign(response.url);
+  }
   return result;
 }
 
