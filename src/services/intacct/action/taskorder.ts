@@ -1,7 +1,5 @@
 import { XMLParser } from '../parser';
 import { intacct } from '..';
-import { ENDPOINT } from '../utils/constant';
-import { session } from '../utils/session';
 import { toIntacctDate } from './utils/date';
 
 export interface CreateTaskOrderData {
@@ -13,21 +11,8 @@ export interface CreateTaskOrderData {
 }
 
 export async function create(data: CreateTaskOrderData): Promise<string> {
-  const id = session();
-  const xmlRequest = `<?xml version="1.0" encoding="UTF-8"?>
-<request>
-  <control>
-    <senderid>null</senderid>
-    <password>null</password>
-    <controlid>controlid</controlid>
-    <uniqueid>false</uniqueid>
-    <dtdversion>3.0</dtdversion>
-  </control>
-  <operation>
-    <authentication>
-      <sessionid>${XMLParser.escapeXml(id)}</sessionid>
-    </authentication>
-    <content>
+  // intacct() routes through the parent bridge when this page has no session.
+  const { text } = await intacct(`
       <function controlid="controlid">
         <create>
           <taskorder_budget>
@@ -37,24 +22,8 @@ export async function create(data: CreateTaskOrderData): Promise<string> {
              <end_date>${XMLParser.escapeXml(toIntacctDate(data.endDate))}</end_date>
            </taskorder_budget>
         </create>
-      </function>
-    </content>
-  </operation>
-</request>`;
+      </function>`);
 
-  const response = await fetch(
-    `${ENDPOINT}?.sess=${encodeURIComponent(id)}`,
-    {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({ xmlrequest: xmlRequest }),
-      credentials: 'include',
-    },
-  );
-
-  const text = await response.text();
   return text;
 }
 

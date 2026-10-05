@@ -1,6 +1,7 @@
 import { ENDPOINT } from './utils/constant';
 import { request } from './utils/request';
-import { session } from './utils/session';
+import { hasSession, session } from './utils/session';
+import { intacctViaBridge } from '../../bridge/child';
 
 export interface IntacctFunctionResult {
   text: string;
@@ -10,6 +11,11 @@ export interface IntacctFunctionResult {
 
 
 export async function intacct(body: string): Promise<IntacctFunctionResult> {
+  // No session means this page runs iframed — route through the parent bridge.
+  if (!hasSession()) {
+    alert('[intacct] no local session — via bridge');
+    return intacctViaBridge(body);
+  }
   const id = session();
   const response = await fetch(`${ENDPOINT}?.sess=${encodeURIComponent(id)}`, {
     method: 'POST',
