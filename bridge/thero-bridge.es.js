@@ -332,62 +332,55 @@ function j() {
 	return !!window._sess;
 }
 //#endregion
-//#region src/services/intacct/utils/debug.ts
-function M(e) {
-	return `controlid=${e.match(/<function[^>]*controlid="([^"]*)"/i)?.[1] ?? "?"} object=${e.match(/<object>([^<]*)<\/object>/i)?.[1] ?? "?"}`;
-}
-//#endregion
 //#region src/bridge/child.ts
-function N() {
-	return F().promise;
+function M() {
+	return P().promise;
 }
-var P = null;
-function F() {
-	return P ||= O({
+var N = null;
+function P() {
+	return N ||= O({
 		messenger: new k({
 			remoteWindow: window.parent,
 			allowedOrigins: ["*"]
 		}),
 		methods: {},
 		timeout: 1e4
-	}), P;
+	}), N;
 }
-function I() {
+function F() {
 	try {
 		return window.parent !== window;
 	} catch {
 		return !0;
 	}
 }
-async function L(e) {
-	alert(`[child>parent] ${M(e)}`);
+async function I(e) {
 	try {
-		let t = await (await F().promise).request(e, new y({ timeout: 15e3 })), n = t?.text ?? "", r = new DOMParser().parseFromString(n, "text/xml");
-		return alert(`[child<parent] status=${t?.status ?? "?"} chars=${n.length}`), {
+		let t = await (await P().promise).request(e, new y({ timeout: 15e3 })), n = t?.text ?? "";
+		return {
 			text: n,
-			xml: r,
+			xml: new DOMParser().parseFromString(n, "text/xml"),
 			status: t?.status ?? void 0
 		};
 	} catch (e) {
-		throw alert(`[child>parent] FAILED: ${e.message}`), P?.destroy(), P = null, e;
+		throw N?.destroy(), N = null, e;
 	}
 }
-var R = "preload-fix-1";
-function z() {
-	if (typeof window > "u" || !I()) return alert("[child] standalone page — direct Intacct"), null;
-	if (j()) return alert("[child] embedded with own session — direct Intacct"), null;
-	alert(`[child] build=${R} embedded without session — bridge mode`), F().promise.then(() => alert("[child] bridge CONNECTED to parent"), (e) => alert(`[child] bridge CONNECT FAILED: ${e.message}`));
+var L = "preload-fix-1";
+function R() {
+	if (typeof window > "u" || !F() || j()) return null;
+	P().promise.catch(() => {});
 	let e = !1;
 	return { uninstall() {
-		e || (e = !0, P?.destroy(), P = null);
+		e || (e = !0, N?.destroy(), N = null);
 	} };
 }
 //#endregion
 //#region src/services/intacct/utils/constant.ts
-var B = "https://www-p04.intacct.com/ia/xml/ajaxgw.phtml";
+var z = "https://www-p04.intacct.com/ia/xml/ajaxgw.phtml";
 //#endregion
 //#region src/services/intacct/utils/request.ts
-function V(e) {
+function B(e) {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <request>
   <control><senderid>null</senderid><password>null</password><controlid>controlid</controlid><uniqueid>false</uniqueid><dtdversion>3.0</dtdversion></control>
@@ -399,23 +392,27 @@ function V(e) {
 }
 //#endregion
 //#region src/services/intacct/index.ts
-async function H(e) {
-	if (!j()) return alert("[intacct] no local session — via bridge"), L(e);
-	let t = A(), n = await (await fetch(`${B}?.sess=${encodeURIComponent(t)}`, {
+async function V(e) {
+	if (!j()) return I(e);
+	let t = A(), n = await fetch(`${z}?.sess=${encodeURIComponent(t)}`, {
 		method: "POST",
 		headers: { "content-type": "application/x-www-form-urlencoded" },
-		body: new URLSearchParams({ xmlrequest: V(e) }),
+		body: new URLSearchParams({ xmlrequest: B(e) }),
 		credentials: "include"
-	})).text(), r = new DOMParser().parseFromString(n, "text/xml"), i = r.querySelector("result > status")?.textContent ?? void 0, a = new Blob([n], { type: "text/plain;charset=utf-8" }), o = URL.createObjectURL(a), s = document.createElement("a");
-	return s.href = o, s.download = `error--${Date.now()}.txt`, document.body.appendChild(s), s.click(), s.remove(), URL.revokeObjectURL(o), {
-		text: n,
-		xml: r,
-		status: i
+	}), r = await n.text(), i = new DOMParser().parseFromString(r, "text/xml"), a = i.querySelector("result > status")?.textContent ?? void 0;
+	if (!n.ok || a !== "success") {
+		let e = new Blob([r], { type: "text/plain;charset=utf-8" }), t = URL.createObjectURL(e), n = document.createElement("a");
+		n.href = t, n.download = `intacct-error--${Date.now()}.txt`, document.body.appendChild(n), n.click(), n.remove(), URL.revokeObjectURL(t);
+	}
+	return {
+		text: r,
+		xml: i,
+		status: a
 	};
 }
 //#endregion
 //#region src/services/intacct/action/taskorder.ts
-async function U(e) {
+async function H(e) {
 	let t = document.forms.namedItem("theForm");
 	if (!(t instanceof HTMLFormElement)) throw Error("Form name=\"theForm\" not found");
 	let n = new FormData(t);
@@ -425,12 +422,11 @@ async function U(e) {
 		body: n,
 		credentials: "include"
 	}), i = await r.text();
-	return alert(`[taskorder create] status=${r.status} chars=${i.length} redirected=${r.redirected}`), r.redirected && r.url && window.location.assign(r.url), i;
+	return r.redirected && r.url && window.location.assign(r.url), i;
 }
 //#endregion
 //#region src/bridge/parent.ts
-function W(e = "intacct") {
-	alert("initParentBridge---" + A());
+function U(e = "intacct") {
 	let t = document.getElementById(e);
 	if (!t) throw Error(`Parent bridge: no iframe found with id "${e}".`);
 	let n = t.contentWindow;
@@ -442,29 +438,18 @@ function W(e = "intacct") {
 		}),
 		methods: {
 			async request(e) {
-				alert(`[parent] request ${M(String(e ?? ""))}`);
-				try {
-					let { text: t, status: n } = await H(String(e ?? ""));
-					return alert(`[parent] response status=${n ?? "?"} chars=${t.length}`), {
-						text: t,
-						status: n ?? null
-					};
-				} catch (e) {
-					throw alert(`[parent] FAILED: ${e.message}`), e;
-				}
+				let { text: t, status: n } = await V(String(e ?? ""));
+				return {
+					text: t,
+					status: n ?? null
+				};
 			},
 			async submitForm(e) {
-				alert("[parent] submitForm — fill + submit parent form");
-				try {
-					let t = await U(e?.values ?? {});
-					return alert(`[parent] submitForm done chars=${t.length}`), { text: t };
-				} catch (e) {
-					throw alert(`[parent] submitForm FAILED: ${e.message}`), e;
-				}
+				return { text: await H(e?.values ?? {}) };
 			}
 		}
 	});
-	return r.promise.then(() => alert("[parent] bridge CONNECTED to child"), (e) => alert(`[parent] bridge CONNECT FAILED: ${e.message}`)), { destroy: () => r.destroy() };
+	return r.promise.catch(() => {}), { destroy: () => r.destroy() };
 }
 //#endregion
-export { R as BUILD_ID, N as getParentApi, W as initParentBridge, z as installBridgeChild, L as intacctViaBridge, I as isEmbedded };
+export { L as BUILD_ID, M as getParentApi, U as initParentBridge, R as installBridgeChild, I as intacctViaBridge, F as isEmbedded };
