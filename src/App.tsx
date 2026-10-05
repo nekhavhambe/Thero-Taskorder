@@ -46,7 +46,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      {JSON.stringify(taskorder, null, 2)}
+      {JSON.stringify(taskorder.data, null, 2)}
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
