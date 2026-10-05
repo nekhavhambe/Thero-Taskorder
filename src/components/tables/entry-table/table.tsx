@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   flexRender,
@@ -25,7 +25,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Plus, Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  Loader2,
+} from 'lucide-react';
+import { useLiveSuspenseQuery } from '@tanstack/react-db';
 import { TextInput } from '../../inputs/textinput';
 import { NumericInput } from '../../inputs/numericinput';
 import { DatePicker } from '../../inputs/datepicker';
@@ -40,7 +49,8 @@ import type { AnyCollection } from '../../../collections/helpers';
 export interface CellContext<T> {
   row: T;
   globalIndex: number;
-  update: (patch: Partial<T>) => void;
+  /** Persist the patch (collection mode awaits `update().when('settled')`). */
+  update: (patch: Partial<T>) => void | Promise<void>;
 }
 
 export type EditorConfig =
@@ -58,8 +68,6 @@ export type EditorConfig =
       displayFields: string[];
       getKey?: (item: any) => string;
       searchFields?: string[];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onCreate?: (name: string) => any;
       placeholder?: string;
     }
   | { kind: 'custom'; render: (ctx: CellContext<any>) => ReactNode };
@@ -77,14 +85,16 @@ export interface EntryColumn<T> {
   footer?: (rows: T[]) => ReactNode;
 }
 
-export interface DataTableProps<T extends object> {
-  data: T[];
-  onChange: (rows: T[]) => void;
-  columns: EntryColumn<T>[];
-  /** Required when rows carry no `id` field (defaults to `row.id`). */
-  getRowId?: (row: T) => string;
-  /** Factory for blank rows (row + button / insert below / reset). */
-  createRow: () => T;
+// ==========================================
+// PROPS — static mode (data/onChange) vs collection mode
+// ==========================================
+
+interface TableChromeProps {
+  columns: EntryColumn<any>[];
+  /** Required when rows carry no `id` field (defaults to `row.id` / collection key). */
+  getRowId?: (row: any) => string;
+  /** Factory for blank rows (inserted via `collection.insert()` in collection mode). */
+  createRow: () => any;
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
   reorderable?: boolean;
@@ -92,6 +102,85 @@ export interface DataTableProps<T extends object> {
   showRowNumbers?: boolean;
   emptyText?: string;
   minWidth?: number;
+}
+
+export interface StaticDataTableProps<T extends object> extends TableChromeProps {
+  collection?: never;
+  data: T[];
+  onChange: (rows: T[]) => void;
+  columns: EntryColumn<T>[];
+  getRowId?: (row: T) => string;
+  createRow: () => T;
+}
+
+export interface CollectionDataTableProps<T extends object> extends TableChromeProps {
+  /** TanStack collection backing the grid — rows come from a live query on it. */
+  collection: AnyCollection;
+  data?: never;
+  onChange?: never;
+  columns: EntryColumn<T>[];
+  getRowId?: (row: T) => string;
+  createRow: () => T;
+  /**
+   * Live-query filter pushed into `useLiveSuspenseQuery`, e.g.
+   * `({ c }) => eq(c.taskOrderId, orderId)`.
+   * Re-runs reactively when captured values change.
+   */
+  where?: (aliases: any) => any;
+  /** Live-query sort, e.g. `({ c }) => c.createdAt`. */
+  orderBy?: (aliases: any) => any;
+  orderDirection?: 'asc' | 'desc';
+  limit?: number;
+}
+
+export type DataTableProps<T extends object> =
+  | StaticDataTableProps<T>
+  | CollectionDataTableProps<T>;
+
+// ==========================================
+// SHARED HELPERS
+// ==========================================
+
+/** Await a TanStack mutation transaction until it is persisted (`when('settled')`). */
+async function waitForPersist(tx: unknown): Promise<void> {
+  if (tx == null) return;
+  const t = tx as {
+    when?: (state: 'settled') => Promise<unknown>;
+    isPersisted?: { promise: Promise<unknown> };
+  };
+  if (typeof t.when === 'function') {
+    await t.when('settled');
+    return;
+  }
+  if (t.isPersisted) {
+    await t.isPersisted.promise;
+    return;
+  }
+  await tx;
+}
+
+/** Unwrap live-query rows (tolerates `{ row }`-wrapped results). */
+function normalizeLiveRows<T>(liveData: unknown): T[] {
+  const rows = (liveData ?? []) as Array<T | { row?: T | null } | undefined | null>;
+  return rows.flatMap((r) => {
+    if (r == null) return [];
+    if (typeof r === 'object' && 'row' in r && (r as { row?: unknown }).row != null) {
+      return [(r as { row: T }).row];
+    }
+    return [r as T];
+  });
+}
+
+function defaultResolveId<T>(collection: AnyCollection | undefined, row: T): string {
+  if (collection) {
+    try {
+      const key = (collection as unknown as { getKeyFromItem: (item: T) => unknown }).getKeyFromItem(row);
+      if (key !== undefined && key !== null && String(key) !== '') return String(key);
+    } catch {
+      // fall through to row.id
+    }
+  }
+  return String((row as { id?: unknown }).id ?? '');
 }
 
 // ==========================================
@@ -106,7 +195,7 @@ function TextCell({
 }: {
   value: string;
   placeholder?: string;
-  onCommit: (value: string) => void;
+  onCommit: (value: string) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const focusedRef = useRef(false);
@@ -128,7 +217,7 @@ function TextCell({
         focusedRef.current = false;
         const next = draft;
         setDraft(null);
-        if (next !== null && next !== value) onCommit(next);
+        if (next !== null && next !== value) void onCommit(next);
       }}
       placeholder={placeholder ?? ''}
     />
@@ -193,53 +282,59 @@ function DraggableRow<T>({ row }: { row: Row<T> }) {
 }
 
 // ==========================================
-// GENERIC DATA TABLE
+// TABLE VIEW (pure presentational grid — both modes render through here)
 // ==========================================
 
-export function DataTable<T extends object>({
-  data,
-  onChange,
+interface TableViewProps<T extends object> {
+  rows: T[];
+  columns: EntryColumn<T>[];
+  resolveId: (row: T) => string;
+  onUpdate: (key: string, globalIndex: number, patch: Partial<T>) => void | Promise<void>;
+  onInsert: () => void | Promise<void>;
+  onInsertBelow: (globalIndex: number) => void | Promise<void>;
+  onDelete: (key: string, globalIndex: number) => void | Promise<void>;
+  onReorder?: (oldIndex: number, newIndex: number) => void;
+  isCreating?: boolean;
+  isRowBusy?: (key: string) => boolean;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  reorderable?: boolean;
+  removable?: boolean;
+  showRowNumbers?: boolean;
+  emptyText?: string;
+  minWidth?: number;
+}
+
+function TableView<T extends object>({
+  rows,
   columns,
-  getRowId,
-  createRow,
+  resolveId,
+  onUpdate,
+  onInsert,
+  onInsertBelow,
+  onDelete,
+  onReorder,
+  isCreating = false,
+  isRowBusy,
   pageSize = 10,
   reorderable = true,
   removable = true,
   showRowNumbers = true,
   emptyText = 'No rows yet. Add a line to get started.',
   minWidth = 980,
-}: DataTableProps<T>) {
+}: TableViewProps<T>) {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const resolveId = getRowId ?? ((row: T) => (row as { id: string }).id);
 
-  // Mirror rows in a ref so stable column defs always operate on fresh data
-  // without re-creating (and re-rendering) the whole table per keystroke.
-  const dataRef = useRef(data);
-  dataRef.current = data;
+  // Stable callbacks via ref so column defs never remount cells mid-type.
+  const callbacksRef = useRef({ onUpdate, onInsertBelow, onDelete });
+  callbacksRef.current = { onUpdate, onInsertBelow, onDelete };
+  const resolveIdRef = useRef(resolveId);
+  resolveIdRef.current = resolveId;
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageSize }));
   }, [pageSize]);
-
-  const updateRow = (globalIndex: number, patch: Partial<T>) => {
-    onChange(dataRef.current.map((row, i) => (i === globalIndex ? { ...row, ...patch } : row)));
-  };
-
-  const insertRowBelow = (globalIndex: number) => {
-    const updated = [...dataRef.current];
-    updated.splice(globalIndex + 1, 0, createRow());
-    onChange(updated);
-  };
-
-  const deleteRow = (globalIndex: number) => {
-    const current = dataRef.current;
-    if (current.length <= 1) {
-      onChange([createRow()]);
-      return;
-    }
-    onChange(current.filter((_, i) => i !== globalIndex));
-  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -247,19 +342,18 @@ export function DataTable<T extends object>({
   );
 
   const handleDragEnd = (event: import('@dnd-kit/core').DragEndEvent) => {
+    if (!onReorder) return;
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      const oldIndex = data.findIndex((item) => resolveId(item) === active.id);
-      const newIndex = data.findIndex((item) => resolveId(item) === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        onChange(arrayMove(data, oldIndex, newIndex));
-      }
+      const oldIndex = rows.findIndex((item) => resolveIdRef.current(item) === active.id);
+      const newIndex = rows.findIndex((item) => resolveIdRef.current(item) === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) onReorder(oldIndex, newIndex);
     }
   };
 
-  const renderEditor = (col: EntryColumn<T>, row: T, globalIndex: number) => {
+  const renderEditor = (col: EntryColumn<T>, row: T, key: string, globalIndex: number) => {
     const record = row as Record<string, unknown>;
-    const update = (patch: Partial<T>) => updateRow(globalIndex, patch);
+    const update = (patch: Partial<T>) => callbacksRef.current.onUpdate(key, globalIndex, patch);
     const editor = col.editor;
     if (!editor) return <span className="px-2 text-slate-400">—</span>;
 
@@ -279,7 +373,7 @@ export function DataTable<T extends object>({
             commitOnBlur
             variant="ghost"
             value={(record[col.key] as number | '' | null) ?? ''}
-            onChange={(val) => update({ [col.key]: val } as Partial<T>)}
+            onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             min={editor.min}
             max={editor.max}
             step={editor.step}
@@ -291,7 +385,7 @@ export function DataTable<T extends object>({
         return (
           <DatePicker
             value={String(record[col.key] ?? '')}
-            onChange={(val) => update({ [col.key]: val } as Partial<T>)}
+            onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             placeholder={editor.placeholder}
           />
         );
@@ -299,7 +393,7 @@ export function DataTable<T extends object>({
         return (
           <StdSelect
             value={String(record[col.key] ?? '')}
-            onChange={(val) => update({ [col.key]: val } as Partial<T>)}
+            onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             options={editor.options}
             placeholder={editor.placeholder}
           />
@@ -313,7 +407,6 @@ export function DataTable<T extends object>({
             searchFields={editor.searchFields}
             value={record[col.key] != null && record[col.key] !== '' ? String(record[col.key]) : null}
             onChange={(key) => update({ [col.key]: key ?? '' } as Partial<T>)}
-            onCreate={editor.onCreate}
             placeholder={editor.placeholder}
           />
         );
@@ -324,10 +417,12 @@ export function DataTable<T extends object>({
     }
   };
 
+  const showDragHandle = reorderable && onReorder != null;
+
   const tableColumns = useMemo<ColumnDef<T>[]>(() => {
     const cols: ColumnDef<T>[] = [];
 
-    if (reorderable) {
+    if (showDragHandle) {
       cols.push({
         id: 'dragHandle',
         header: () => (
@@ -367,11 +462,13 @@ export function DataTable<T extends object>({
         header: () => <div className={`w-full ${alignClass}`}><span className="font-semibold text-slate-700">{col.header}</span></div>,
         cell: ({ row }) => {
           const globalIdx = row.index + pagination.pageIndex * pagination.pageSize;
+          const key = resolveIdRef.current(row.original);
+          const busy = isRowBusy?.(key) ?? false;
           const alignClass =
             col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left';
           return (
-            <div className={`w-full ${alignClass}`}>
-              {col.display ? col.display(row.original) : renderEditor(col, row.original, globalIdx)}
+            <div className={`w-full ${alignClass} ${busy ? 'opacity-50 pointer-events-none' : ''}`}>
+              {col.display ? col.display(row.original) : renderEditor(col, row.original, key, globalIdx)}
             </div>
           );
         },
@@ -389,11 +486,13 @@ export function DataTable<T extends object>({
         ),
         cell: ({ row }) => {
           const globalIdx = row.index + pagination.pageIndex * pagination.pageSize;
+          const key = resolveIdRef.current(row.original);
+          const busy = isRowBusy?.(key) ?? false;
           return (
             <div className="flex items-center justify-center gap-1.5 px-1">
               <button
                 type="button"
-                onClick={() => insertRowBelow(globalIdx)}
+                onClick={() => void callbacksRef.current.onInsertBelow(globalIdx)}
                 title="Insert line below"
                 className="p-1 text-slate-400 hover:text-sky-700 hover:bg-slate-100 rounded transition-colors cursor-pointer inline-flex items-center justify-center"
               >
@@ -401,11 +500,12 @@ export function DataTable<T extends object>({
               </button>
               <button
                 type="button"
-                onClick={() => deleteRow(globalIdx)}
+                onClick={() => void callbacksRef.current.onDelete(key, globalIdx)}
+                disabled={busy}
                 title="Delete line"
-                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center justify-center"
+                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-40"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               </button>
             </div>
           );
@@ -416,12 +516,12 @@ export function DataTable<T extends object>({
 
     return cols;
     // Columns stay referentially stable across keystrokes (updaters read via
-    // dataRef) so cells never remount and inputs never lose focus.
+    // callbacksRef) so cells never remount and inputs never lose focus.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, reorderable, removable, showRowNumbers, pagination.pageIndex, pagination.pageSize]);
+  }, [columns, showDragHandle, removable, showRowNumbers, pagination.pageIndex, pagination.pageSize]);
 
   const table = useReactTable({
-    data,
+    data: rows,
     columns: tableColumns,
     state: { pagination, columnSizing },
     onPaginationChange: setPagination,
@@ -429,10 +529,10 @@ export function DataTable<T extends object>({
     columnResizeMode: 'onChange',
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getRowId: (original) => resolveId(original),
+    getRowId: (original) => resolveIdRef.current(original),
   });
 
-  const totalRowsCount = data.length;
+  const totalRowsCount = rows.length;
   const isPageSizeReached = totalRowsCount > pagination.pageSize;
   const pageCount = table.getPageCount();
   const hasFooter = columns.some((c) => c.footer != null);
@@ -500,19 +600,33 @@ export function DataTable<T extends object>({
                     {emptyText}
                   </td>
                 </tr>
-              ) : (
-                <SortableContext items={visibleRows.map((d) => resolveId(d.original))} strategy={verticalListSortingStrategy}>
+              ) : onReorder ? (
+                <SortableContext items={visibleRows.map((d) => resolveIdRef.current(d.original))} strategy={verticalListSortingStrategy}>
                   {visibleRows.map((row) => (
-                    <DraggableRow key={resolveId(row.original)} row={row} />
+                    <DraggableRow key={resolveIdRef.current(row.original)} row={row} />
                   ))}
                 </SortableContext>
+              ) : (
+                visibleRows.map((row) => (
+                  <tr
+                    key={resolveIdRef.current(row.original)}
+                    className="group transition-colors duration-150 border-b border-slate-200 bg-white hover:bg-slate-50/80"
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="py-0 px-1.5 text-xs text-slate-700 align-middle">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
               )}
             </tbody>
 
             {hasFooter && (
               <tfoot>
                 <tr className="bg-white border-0 text-xs font-semibold text-slate-800">
-                  {reorderable && <td className="border-0 py-2.5 px-2"></td>}
+                  {showDragHandle && <td className="border-0 py-2.5 px-2"></td>}
                   {showRowNumbers && <td className="border-0 py-2.5 px-2"></td>}
                   {columns.map((col) => (
                     <td
@@ -521,7 +635,7 @@ export function DataTable<T extends object>({
                         col.align === 'left' ? 'text-left' : col.align === 'center' ? 'text-center' : 'text-right'
                       }`}
                     >
-                      <div className="px-2">{col.footer?.(data)}</div>
+                      <div className="px-2">{col.footer?.(rows)}</div>
                     </td>
                   ))}
                   {removable && <td className="border-0 py-2.5 px-2 text-center"></td>}
@@ -532,15 +646,278 @@ export function DataTable<T extends object>({
         </DndContext>
       </div>
 
+      {/* Create row */}
+      <div className="bg-white border-t border-slate-200 px-4 py-2 flex items-center">
+        <button
+          type="button"
+          onClick={() => void onInsert()}
+          disabled={isCreating}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-800 hover:bg-sky-50 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          {isCreating ? 'Adding…' : 'Add line'}
+        </button>
+      </div>
+
       {/* Footer bar with pagination — rendered only when pages exist,
           so there is no empty gap between the scrollbar and the border. */}
       {isPageSizeReached && pageCount > 1 && (
-        <div className="bg-white px-4 py-1.5 flex items-center justify-end">
+        <div className="bg-white px-4 py-1.5 flex items-center justify-end border-t border-slate-200">
           <div className="ml-auto">{renderPaginationControls()}</div>
         </div>
       )}
     </div>
   );
 }
+
+// ==========================================
+// STATIC MODE (legacy data/onChange — local state, no persistence)
+// ==========================================
+
+/** Legacy local-state grid (data/onChange) — prefer `DataTable` with `collection`. */
+export function StaticDataTable<T extends object>({
+  data,
+  onChange,
+  columns,
+  getRowId,
+  createRow,
+  pageSize,
+  onPageSizeChange,
+  reorderable,
+  removable,
+  showRowNumbers,
+  emptyText,
+  minWidth,
+}: StaticDataTableProps<T>) {
+  const resolveId = getRowId ?? ((row: T) => String((row as { id: string }).id));
+
+  // Mirror rows in a ref so stable column defs always operate on fresh data
+  // without re-creating (and re-rendering) the whole table per keystroke.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const updateRow = (_key: string, globalIndex: number, patch: Partial<T>) => {
+    onChange(dataRef.current.map((row, i) => (i === globalIndex ? { ...row, ...patch } : row)));
+  };
+
+  const insertRow = () => {
+    onChange([...dataRef.current, createRow()]);
+  };
+
+  const insertRowBelow = (globalIndex: number) => {
+    const updated = [...dataRef.current];
+    updated.splice(globalIndex + 1, 0, createRow());
+    onChange(updated);
+  };
+
+  const deleteRow = (key: string, globalIndex: number) => {
+    void key;
+    const current = dataRef.current;
+    if (current.length <= 1) {
+      onChange([createRow()]);
+      return;
+    }
+    onChange(current.filter((_, i) => i !== globalIndex));
+  };
+
+  const handleReorder = (oldIndex: number, newIndex: number) => {
+    onChange(arrayMove(dataRef.current, oldIndex, newIndex));
+  };
+
+  return (
+    <TableView<T>
+      rows={data}
+      columns={columns}
+      resolveId={resolveId}
+      onUpdate={updateRow}
+      onInsert={insertRow}
+      onInsertBelow={insertRowBelow}
+      onDelete={deleteRow}
+      onReorder={reorderable === false ? undefined : handleReorder}
+      pageSize={pageSize}
+      onPageSizeChange={onPageSizeChange}
+      reorderable={reorderable}
+      removable={removable}
+      showRowNumbers={showRowNumbers}
+      emptyText={emptyText}
+      minWidth={minWidth}
+    />
+  );
+}
+
+// ==========================================
+// COLLECTION MODE (live query + persisted CRUD)
+// ==========================================
+
+function CollectionDataTableInner<T extends object>({
+  collection,
+  columns,
+  getRowId,
+  createRow,
+  where,
+  orderBy,
+  orderDirection = 'asc',
+  limit,
+  pageSize,
+  onPageSizeChange,
+  reorderable = false,
+  removable = true,
+  showRowNumbers = true,
+  emptyText,
+  minWidth,
+}: CollectionDataTableProps<T>) {
+  // Ensure on-demand (query) collections start syncing on mount.
+  useEffect(() => {
+    (collection as unknown as { preload?: () => Promise<unknown> })?.preload?.().catch(() => {});
+  }, [collection]);
+
+  // Live rows of the passed collection, with caller-supplied filters
+  // pushed into the live query (Intacct query collections translate
+  // equality filters into server-side where clauses).
+  const { data: liveData } = useLiveSuspenseQuery((q) => {
+    const base = q.from({ c: collection as AnyCollection });
+    let qb: any = base.select(({ c }: any) => c);
+    if (where) qb = qb.where(where as never);
+    if (orderBy) qb = qb.orderBy(orderBy as never, orderDirection);
+    if (limit != null) qb = qb.limit(limit);
+    return qb;
+  });
+  const rows = useMemo(() => normalizeLiveRows<T>(liveData), [liveData]);
+
+  const resolveId = useCallback(
+    (row: T) => (getRowId ? getRowId(row) : defaultResolveId(collection, row)),
+    [collection, getRowId],
+  );
+
+  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
+  const [isCreating, setIsCreating] = useState(false);
+
+  const markBusy = useCallback((key: string, busy: boolean) => {
+    setBusyKeys((prev) => {
+      const next = new Set(prev);
+      if (busy) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
+
+  const isRowBusy = useCallback((key: string) => busyKeys.has(key), [busyKeys]);
+
+  /** Cell commit (blur / select / custom builder): update the field, await persist. */
+  const updateRow = useCallback(
+    async (key: string, _globalIndex: number, patch: Partial<T>) => {
+      if (Object.keys(patch).length === 0) return;
+      markBusy(key, true);
+      try {
+        const tx = (collection as unknown as {
+          update: (k: unknown, fn: (draft: Record<string, unknown>) => void) => unknown;
+        }).update(key, (draft) => {
+          Object.assign(draft, patch);
+        });
+        await waitForPersist(tx);
+      } catch (err) {
+        console.error('Table update failed:', err);
+      } finally {
+        markBusy(key, false);
+      }
+    },
+    [collection, markBusy],
+  );
+
+  /** Create button: insert a blank row, wait until it is persisted + visible. */
+  const insertRow = useCallback(async () => {
+    setIsCreating(true);
+    try {
+      const tx = (collection as unknown as { insert: (item: unknown) => unknown }).insert(createRow());
+      await waitForPersist(tx);
+    } catch (err) {
+      console.error('Table create failed:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [collection, createRow]);
+
+  const insertRowBelow = useCallback(
+    async (_globalIndex: number) => {
+      // Collections are unordered sets — "below" has no persisted meaning,
+      // so this inserts a fresh row the same way the Add-line button does.
+      await insertRow();
+    },
+    [insertRow],
+  );
+
+  /** Delete action: remove the row key, await persist. */
+  const deleteRow = useCallback(
+    async (key: string) => {
+      markBusy(key, true);
+      try {
+        const tx = (collection as unknown as { delete: (k: unknown) => unknown }).delete(key);
+        await waitForPersist(tx);
+      } catch (err) {
+        console.error('Table delete failed:', err);
+      } finally {
+        markBusy(key, false);
+      }
+    },
+    [collection, markBusy],
+  );
+
+  return (
+    <TableView<T>
+      rows={rows}
+      columns={columns}
+      resolveId={resolveId}
+      onUpdate={updateRow}
+      onInsert={insertRow}
+      onInsertBelow={insertRowBelow}
+      onDelete={deleteRow}
+      // No persisted order column → drag reorder stays off unless the caller
+      // opts in explicitly AND wires its own order field via onReorder. Until
+      // then collection rows render without the drag handle.
+      onReorder={undefined}
+      isCreating={isCreating}
+      isRowBusy={isRowBusy}
+      pageSize={pageSize}
+      onPageSizeChange={onPageSizeChange}
+      reorderable={reorderable}
+      removable={removable}
+      showRowNumbers={showRowNumbers}
+      emptyText={emptyText}
+      minWidth={minWidth}
+    />
+  );
+}
+
+function CollectionTableFallback({ emptyText }: { emptyText?: string }) {
+  return (
+    <div
+      className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden px-4 py-8 text-center text-xs text-slate-400"
+      style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+    >
+      <Loader2 className="w-4 h-4 animate-spin inline-block mr-2 text-slate-400" />
+      {emptyText ?? 'Loading rows…'}
+    </div>
+  );
+}
+
+// ==========================================
+// GENERIC DATA TABLE (dispatches on collection vs data/onChange)
+// ==========================================
+
+export function DataTable<T extends object>(props: DataTableProps<T>) {
+  if ('collection' in props && props.collection) {
+    const { pageSize } = props;
+    void pageSize;
+    return (
+      <Suspense fallback={<CollectionTableFallback />}>
+        <CollectionDataTableInner {...(props as CollectionDataTableProps<T>)} />
+      </Suspense>
+    );
+  }
+  return <StaticDataTable {...(props as StaticDataTableProps<T>)} />;
+}
+
+/** Collection-backed grid (live query + insert/update/delete with awaited persist). */
+export const CollectionDataTable = CollectionDataTableInner;
 
 export default DataTable;

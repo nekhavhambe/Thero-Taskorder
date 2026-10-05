@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent, MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FocusEvent, KeyboardEvent } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Check, ChevronDown, Plus, X } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { InitialQueryBuilder } from '@tanstack/react-db';
 import { formatDisplayFields } from '../../../collections/helpers';
@@ -22,11 +22,8 @@ export interface AutocompleteProps<T extends object = Record<string, unknown>> {
   /** Selected row key (or null). */
   value: string | null;
   onChange: (key: string | null, item: T | null) => void;
-  /** Creates a new collection row from the typed text; result is auto-selected. */
-  onCreate?: (name: string) => T;
   placeholder?: string;
   disabled?: boolean;
-  hasError?: boolean;
   className?: string;
 }
 
@@ -39,21 +36,20 @@ function AutocompleteInner<T extends object>({
   searchFields = displayFields,
   value,
   onChange,
-  onCreate,
   placeholder = 'Type to search...',
   disabled = false,
-  hasError = false,
   className = '',
 }: AutocompleteProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const focusedRef = useRef(false);
+  const revertOnCloseRef = useRef(false);
 
   const { data } = useLiveQuery((q: InitialQueryBuilder) =>
     q.from({ c: collection }).select(({ c }) => c),
   );
-
 
   const items = useMemo(() => {
     const rows = (data ?? []) as Array<
@@ -71,7 +67,6 @@ function AutocompleteInner<T extends object>({
       return [r as T];
     });
   }, [data]);
-
 
   const selected = useMemo(() => {
     if (value == null || value === '') return null;
@@ -101,41 +96,121 @@ function AutocompleteInner<T extends object>({
     );
   }, [items, value, getKey]);
 
-  const filtered = items.filter((item) => {
-    const q = query.toLowerCase().trim();
-    if (!q) return true;
-    const record = item as Record<string, unknown>;
-    return searchFields.some((field) =>
-      String(record[field] ?? '').toLowerCase().includes(q)
-    );
-  });
+  const selectedDisplay = useMemo(
+    () => (selected ? formatDisplayFields(selected, displayFields) : ''),
+    [selected, displayFields],
+  );
 
-  const actionableCount = filtered.length + (query.trim() && onCreate ? 1 : 0);
+  // Keep the textbox in sync with the external value while the user is not
+  // actively editing (initial mount, async collection load, form reset, ...).
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setInputValue(selectedDisplay);
+    }
+  }, [selectedDisplay]);
 
-  const handleSelect = (item: T) => {
+  // Showing the untouched selection text → present the full list so the user
+  // can pick something else. Once they edit a character, filter by the text.
+  const isShowingSelection = selectedDisplay !== '' && inputValue === selectedDisplay;
+  const effectiveQuery = isShowingSelection ? '' : inputValue;
+
+  const filtered = useMemo(() => {
+    const raw = effectiveQuery.toLowerCase().trim();
+    if (!raw) return items;
+    // Split on whitespace/dashes so partial edits of "ID--Name" display
+    // strings (e.g. deleting the ID half) still match the remainder.
+    const tokens = raw.split(/[\s–—-]+/).filter(Boolean);
+    return items.filter((item) => {
+      const record = item as Record<string, unknown>;
+      const haystacks = [
+        formatDisplayFields(item, displayFields).toLowerCase(),
+        ...searchFields.map((field) =>
+          String(record[field] ?? '').toLowerCase(),
+        ),
+      ];
+      return tokens.every((token) =>
+        haystacks.some((hay) => hay.includes(token)),
+      );
+    });
+  }, [items, effectiveQuery, displayFields, searchFields]);
+
+  // Keep keyboard highlight inside the list as results shrink/grow.
+  useEffect(() => {
+    setHighlightedIndex((prev) => {
+      if (filtered.length === 0) return 0;
+      return Math.min(prev, filtered.length - 1);
+    });
+  }, [filtered.length]);
+
+  const actionableCount = filtered.length;
+
+  const commitSelection = (item: T) => {
+    revertOnCloseRef.current = false;
     onChange(getKey(item), item);
-    setQuery('');
+    setInputValue(formatDisplayFields(item, displayFields));
     setIsOpen(false);
+    inputRef.current?.blur();
   };
 
-  const handleCreate = () => {
-    if (!onCreate || !query.trim()) return;
-    const item = onCreate(query.trim());
-    setQuery('');
-    setIsOpen(false);
-    onChange(getKey(item), item);
+  /** Default to the first match when the user typed ≥1 char but never picked. */
+  const commitDefault = () => {
+    if (disabled) return;
+    const typed = inputValue.trim();
+    if (typed === '') {
+      if (value != null && value !== '') onChange(null, null);
+      setInputValue('');
+      return;
+    }
+    // Untouched selection text → nothing to resolve.
+    if (isShowingSelection) return;
+    if (filtered.length > 0) {
+      const fallback =
+        highlightedIndex >= 0 && highlightedIndex < filtered.length
+          ? filtered[highlightedIndex]
+          : filtered[0];
+      commitSelection(fallback);
+    } else if (!selected) {
+      // No match — leave the typed text visible but report no selection.
+      if (value != null && value !== '') onChange(null, null);
+    } else {
+      // Had a previous selection but typed something unmatchable: revert.
+      setInputValue(selectedDisplay);
+      if (value == null || value === '') onChange(null, null);
+    }
   };
 
-  const handleClear = (e: MouseEvent) => {
-    e.stopPropagation();
-    onChange(null, null);
-    setQuery('');
-    inputRef.current?.focus();
+  const handleFocus = () => {
+    focusedRef.current = true;
+    revertOnCloseRef.current = false;
+    if (!disabled) {
+      setHighlightedIndex(0);
+      setIsOpen(true);
+    }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleBlur = (_e: FocusEvent<HTMLInputElement>) => {
+    focusedRef.current = false;
+    // Defer so a pointer selection (mousedown → click) wins over blur-commit.
+    window.setTimeout(() => {
+      if (focusedRef.current) return;
+      if (revertOnCloseRef.current) {
+        revertOnCloseRef.current = false;
+        setInputValue(selectedDisplay);
+        setIsOpen(false);
+        return;
+      }
+      if (isOpen) commitDefault();
+      setIsOpen(false);
+    }, 120);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter') setIsOpen(true);
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        e.preventDefault();
+        setHighlightedIndex(0);
+        setIsOpen(true);
+      }
       return;
     }
     if (e.key === 'ArrowDown') {
@@ -144,22 +219,38 @@ function AutocompleteInner<T extends object>({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setHighlightedIndex(
-        (prev) => (prev - 1 + Math.max(actionableCount, 1)) % Math.max(actionableCount, 1)
+        (prev) => (prev - 1 + Math.max(actionableCount, 1)) % Math.max(actionableCount, 1),
       );
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (highlightedIndex < filtered.length) {
-        handleSelect(filtered[highlightedIndex]);
-      } else {
-        handleCreate();
+      if (highlightedIndex < filtered.length && filtered.length > 0) {
+        // Defaults to filtered[0] when the user just typed (highlight = 0).
+        commitSelection(filtered[highlightedIndex]);
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
+      revertOnCloseRef.current = true;
+      setInputValue(selectedDisplay);
+      setHighlightedIndex(0);
+      setIsOpen(false);
+      inputRef.current?.blur();
+    } else if (e.key === 'Tab') {
+      commitDefault();
       setIsOpen(false);
     }
   };
 
   return (
-    <Popover.Root open={isOpen && !disabled} onOpenChange={setIsOpen}>
+    <Popover.Root
+      open={isOpen && !disabled}
+      onOpenChange={(open) => {
+        if (!open && focusedRef.current) {
+          // Radix may close on outside pointer-down before blur fires.
+          commitDefault();
+        }
+        setIsOpen(open);
+      }}
+    >
       <div className={`relative w-full ${className}`}>
         {/* Hidden input so native form submission (FormData) picks up the selected key. */}
         {name && (
@@ -167,13 +258,7 @@ function AutocompleteInner<T extends object>({
         )}
         <Popover.Anchor asChild>
           <div
-            className={`flex items-center w-full min-h-[34px] border-b ${
-              hasError
-                ? 'border-red-500'
-                : isOpen
-                ? 'border-[#008784]'
-                : 'border-slate-300 hover:border-slate-400'
-            } transition-colors bg-transparent ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-text'}`}
+            className={`flex items-center w-full min-h-[34px] bg-transparent ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-text'}`}
             onClick={() => {
               if (!disabled) {
                 setIsOpen(true);
@@ -181,47 +266,32 @@ function AutocompleteInner<T extends object>({
               }
             }}
           >
-            {selected ? (
-              <div className="flex items-center justify-between w-full py-1 text-sm">
-                <span className="font-medium text-slate-900 truncate">
-                  {formatDisplayFields(selected, displayFields)}
-                </span>
-                {!disabled && (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="text-slate-400 hover:text-slate-600 p-0.5 ml-2 rounded"
-                    title="Remove selection"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center w-full">
-                <input
-                  ref={inputRef}
-                  id={id}
-                  type="text"
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setIsOpen(true);
-                    setHighlightedIndex(0);
-                  }}
-                  onFocus={() => setIsOpen(true)}
-                  onKeyDown={handleKeyDown}
-                  disabled={disabled}
-                  placeholder={placeholder}
-                  className="w-full text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal bg-transparent py-1.5 focus:outline-none"
-                />
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform ml-1 ${
-                    isOpen ? 'rotate-180 text-[#008784]' : ''
-                  }`}
-                />
-              </div>
-            )}
+            <div className="flex items-center w-full">
+              <input
+                ref={inputRef}
+                id={id}
+                type="text"
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  revertOnCloseRef.current = false;
+                  setIsOpen(true);
+                  setHighlightedIndex(0);
+                }}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                disabled={disabled}
+                placeholder={placeholder}
+                autoComplete="off"
+                className="w-full text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal bg-transparent py-1.5 focus:outline-none"
+              />
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform ml-1 shrink-0 ${
+                  isOpen ? 'rotate-180 text-[#008784]' : ''
+                }`}
+              />
+            </div>
           </div>
         </Popover.Anchor>
 
@@ -230,6 +300,7 @@ function AutocompleteInner<T extends object>({
             sideOffset={4}
             align="start"
             onOpenAutoFocus={(e) => e.preventDefault()}
+            onCloseAutoFocus={(e) => e.preventDefault()}
             className="z-50 w-[var(--radix-popover-trigger-width)] min-w-[280px] bg-white border border-slate-200 rounded shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
           >
             {filtered.length > 0 ? (
@@ -239,8 +310,9 @@ function AutocompleteInner<T extends object>({
                   return (
                     <li
                       key={key}
+                      onMouseDown={(e) => e.preventDefault()}
                       onMouseEnter={() => setHighlightedIndex(idx)}
-                      onClick={() => handleSelect(item)}
+                      onClick={() => commitSelection(item)}
                       className={`px-3 py-2 cursor-pointer flex items-center justify-between ${
                         highlightedIndex === idx ? 'bg-[#008784]/10 text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                       }`}
@@ -255,20 +327,9 @@ function AutocompleteInner<T extends object>({
               </ul>
             ) : (
               <div className="p-3 text-xs text-slate-500 text-center">
-                No matches found for &ldquo;{query}&rdquo;
-              </div>
-            )}
-
-            {query.trim().length > 0 && onCreate && (
-              <div className="border-t border-slate-100 bg-slate-50 p-1.5">
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  className="w-full text-left px-2.5 py-1.5 text-xs text-[#008784] hover:bg-white rounded font-medium flex items-center gap-2"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Create &ldquo;<strong>{query.trim()}</strong>&rdquo;</span>
-                </button>
+                {effectiveQuery.trim()
+                  ? <>No matches found for &ldquo;{effectiveQuery.trim()}&rdquo;</>
+                  : 'No items available'}
               </div>
             )}
           </Popover.Content>

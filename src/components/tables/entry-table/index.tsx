@@ -6,24 +6,16 @@ import { useCollectionItems } from '../../../collections/helpers';
 import type { StandardTask } from '../../../collections/standard-tasks';
 
 export { DataTable } from './table';
-export type { CellContext, DataTableProps, EditorConfig, EntryColumn } from './table';
-
-// ==========================================
-// TYPES & CONFIGURATION
-// ==========================================
+export type { CellContext, CollectionDataTableProps, DataTableProps, EditorConfig, EntryColumn, StaticDataTableProps } from './table';
 
 export interface LineItem {
   id: string;
   description: string;
-  /** Intacct STANDARDTASK RECORDNO (autocomplete shows STANDARDTASKID--NAME, stores RECORDNO). */
   task: string;
   qty: number | '' | null;
   rate: number | '' | null;
-  /** Discount percent applied to Value (e.g. 10 = 10%). */
   discount: number | '' | null;
-  /** Tax percent applied after discount (e.g. 15 = 15%). */
   taxRate: number | '' | null;
-  /** Actual cost spent — read-only display (fed from actuals). */
   costSpent: number | '' | null;
 }
 

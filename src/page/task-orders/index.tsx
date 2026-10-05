@@ -107,15 +107,6 @@ const createDraftRow = (): TaskOrderLineDraft => ({
   rate: 0,
 });
 
-
-const sameDraft = (  a: TaskOrderLineDraft,
-  b: TaskOrderLineDraft,
-): boolean =>
-  a.description === b.description &&
-  a.task === b.task &&
-  a.quantity === b.quantity &&
-  a.rate === b.rate;
-
 export const TaskOrders = () => {
   const { register, control } = useFormContext<TaskOrderConfig>();
   const { page } = useParams();
@@ -152,29 +143,9 @@ export const TaskOrders = () => {
     setTimeout(() => setToastMessage(null), 3200);
   };
 
-  // Collection-direct CRUD: inserts/updates/deletes hit
-  // taskOrderLineDraftCollection (local only — Intacct sync happens on
-  // submit via taskOrderLineCollection's onInsert).
-  const handleDraftsChange = (rows: TaskOrderLineDraft[]) => {
-    const prev = new Map(drafts.map((d) => [d.id, d]));
-    const nextIds = new Set(rows.map((r) => r.id));
-
-    const removed = drafts.filter((d) => !nextIds.has(d.id));
-    if (removed.length > 0) {
-      taskOrderLineDraftCollection.delete(removed.map((d) => d.id));
-    }
-
-    for (const row of rows) {
-      const old = prev.get(row.id);
-      if (!old) {
-        taskOrderLineDraftCollection.insert(row);
-      } else if (!sameDraft(old, row)) {
-        taskOrderLineDraftCollection.update(row.id, (draft) => {
-          Object.assign(draft, row);
-        });
-      }
-    }
-  };
+  // Collection-direct CRUD lives inside DataTable now: cell commits call
+  // `taskOrderLineDraftCollection.update(key, …)` and await `when('settled')`,
+  // Add-line calls `insert()`, delete calls `delete()` — no local diffing here.
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -336,8 +307,7 @@ export const TaskOrders = () => {
       {!isNewPage && (
         <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
           <DataTable<TaskOrderLineDraft>
-            data={drafts}
-            onChange={handleDraftsChange}
+            collection={taskOrderLineDraftCollection}
             columns={columns}
             createRow={createDraftRow}
             pageSize={pageSize}
