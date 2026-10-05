@@ -20,9 +20,8 @@ export interface TaskOrderConfig {
 }
 
 function App() {
-
-  const { id, endDate, name, projectId, projectName, projectKey, startDate } = useParams();
-  const taskorder = useLiveSuspenseQuery((q) =>
+  const { id } = useParams();
+  const { data }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
       .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
@@ -35,27 +34,29 @@ function App() {
 
   const defaultValues = useMemo<TaskOrderConfig>(
     () => ({
-      id: id ?? "",
-      date: { start: toIsoDateParam(startDate), end: toIsoDateParam(endDate) },
-      name: name ?? "",
+      id: data.ID ?? "",
+      date: {
+        start: toIsoDateParam(data.START_DATE),
+        end: toIsoDateParam(data.END_DATE),
+      },
+      name: data.NAME ?? "",
       order: "",
       project: {
-        key: projectKey ?? "",
-        name: projectName ?? "",
-        id: projectId ?? "",
+        key: data?.Project.RECORDNO ?? "",
+        name: data?.Project.NAME ?? "",
+        id: data?.Project.PROJECTID ?? "",
       },
     }),
-    [id, startDate, endDate, name, projectKey, projectName, projectId],
+    [data],
   );
 
   const form = useForm<TaskOrderConfig>({
     defaultValues,
   });
-  
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      {JSON.stringify(taskorder.data, null, 2)}
+      {JSON.stringify(data, null, 2)}
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>

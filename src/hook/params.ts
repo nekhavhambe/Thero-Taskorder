@@ -2,13 +2,8 @@ import { useMemo, useSyncExternalStore } from "react";
 
 export interface PageParams {
   id: string;
-  name: string;
   page: string;
-  projectId: string;
-  projectName: string;
-  projectKey: string;
-  startDate: string;
-  endDate: string;
+  name?: string;
 }
 
 /** Query string embedded in the hash (e.g. `#/task-order?name=mack`). */
