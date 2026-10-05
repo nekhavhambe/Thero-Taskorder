@@ -50,12 +50,11 @@ function AutocompleteInner<T extends object>({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data, isError, state } = useLiveQuery((q: InitialQueryBuilder) =>
+  const { data } = useLiveQuery((q: InitialQueryBuilder) =>
     q.from({ c: collection }).select(({ c }) => c),
   );
 
 
-  alert(JSON.stringify({ data, isError, state }));
   const items = useMemo(() => {
     const rows = (data ?? []) as Array<
       T | { row?: T | null } | undefined | null

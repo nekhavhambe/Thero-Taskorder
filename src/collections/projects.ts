@@ -24,20 +24,21 @@ export const projectCollection = createCollection(
     queryKey: ["projects"],
     queryFn: async () => {
       try {
-        alert('fetching projects...');
+        alert('hi')
         const { data } = await query({
           object: "PROJECT",
           fields: ["RECORDNO","PROJECTID","NAME","CURRENCY","STATUS"],
           filters: [{ STATUS: "active" }],
           orderBy: "PROJECTID",
         });
-
-        return data || [];
+      
+        return (data || []).filter(
+          (row) => (row.RECORDNO ?? "").trim() !== "",
+        );
       } catch (err) {
         return [];
       }
     },
-    initialData: [],
     queryClient: client,
     getKey: (item) => item.RECORDNO,
     retry: false,

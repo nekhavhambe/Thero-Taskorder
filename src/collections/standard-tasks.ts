@@ -30,7 +30,6 @@ export const standardTaskCollection = createCollection(
         return [];
       }
     },
-    initialData: [],
     queryClient: client,
     getKey: (item) => item.RECORDNO,
     retry: false,
