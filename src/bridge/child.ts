@@ -2,7 +2,6 @@ import { CallOptions, connect, WindowMessenger } from 'penpal';
 import type { Connection, Methods, RemoteProxy } from 'penpal';
 import type { IntacctFunctionResult } from '../services/intacct';
 import { hasSession } from '../services/intacct/utils/session';
-import { describeIntacctBody } from '../services/intacct/utils/debug';
 
 /** Methods the parent page exposes to the iframed app. */
 export interface ParentBridgeApi extends Methods {
@@ -46,20 +45,17 @@ export function isEmbedded(): boolean {
  * is false — i.e. this page runs iframed without its own session.
  */
 export async function intacctViaBridge(body: string): Promise<IntacctFunctionResult> {
-  alert(`[child>parent] ${describeIntacctBody(body)}`);
   try {
     const parent = await getConnection().promise;
     const res = await parent.request(body, new CallOptions({ timeout: 15000 }));
     const text = res?.text ?? '';
     const xml = new DOMParser().parseFromString(text, 'text/xml');
-    alert(`[child<parent] status=${res?.status ?? '?'} chars=${text.length}`);
     return {
       text,
       xml,
       status: res?.status ?? undefined,
     };
   } catch (err) {
-    alert(`[child>parent] FAILED: ${(err as Error).message}`);
     // Drop the dead connection so the next call re-handshakes from scratch.
     connection?.destroy();
     connection = null;
@@ -84,19 +80,15 @@ export const BUILD_ID = 'preload-fix-1';
 
 export function installBridgeChild(): InstalledBridgeChild | null {
   if (typeof window === 'undefined' || !isEmbedded()) {
-    alert('[child] standalone page — direct Intacct');
     return null;
   }
   if (hasSession()) {
-    alert('[child] embedded with own session — direct Intacct');
     return null; // Own session — no bridge needed.
   }
-  alert(`[child] build=${BUILD_ID} embedded without session — bridge mode`);
 
-  getConnection().promise.then(
-    () => alert('[child] bridge CONNECTED to parent'),
-    (err) => alert(`[child] bridge CONNECT FAILED: ${(err as Error).message}`),
-  );
+  getConnection().promise.catch(() => {
+    // Handshake failures surface on the first call; nothing to do here.
+  });
 
   let uninstalled = false;
   return {

@@ -42,7 +42,6 @@ export async function submitTaskOrderForm(values: Record<string, string>): Promi
   });
 
   const result = await response.text();
-  alert(`[taskorder create] status=${response.status} chars=${result.length} redirected=${response.redirected}`);
   if (response.redirected && response.url) {
     window.location.assign(response.url);
   }
@@ -53,10 +52,8 @@ export async function create(data: CreateTaskOrderData): Promise<string> {
   // Session present = we ARE the parent: submit the parent form directly.
   // No session = iframe: ask the parent to fill + submit its form.
   if (hasSession()) {
-    alert('[taskorder create] on parent — submit parent form');
     return submitTaskOrderForm(toParentValues(data));
   }
-  alert('[taskorder create] on iframe — ask parent to submit');
   const parent = await getParentApi();
   const res = await parent.submitForm(
     { values: toParentValues(data) },

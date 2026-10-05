@@ -17,15 +17,13 @@ export const taskOrderCollection = createCollection(
       await Promise.all(
         transaction.mutations.map(async (mutation) => {
           const row = mutation.modified;
-          alert("started")
-          const text = await createTaskOrder({
+          await createTaskOrder({
             taskOrderName: row.taskOrderName,
             purchaseOrder: row.purchaseOrder,
             project: row.project,
             startDate: row.startDate,
             endDate: row.endDate,
           });
-          alert(text);
         }),
       );
     },

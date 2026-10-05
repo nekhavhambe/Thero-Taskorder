@@ -1,8 +1,6 @@
 import { connect, WindowMessenger } from 'penpal';
 import { intacct } from '../services/intacct';
-import { describeIntacctBody } from '../services/intacct/utils/debug';
 import { submitTaskOrderForm } from '../services/intacct/action/taskorder';
-import { session } from '../services/intacct/utils/session';
 
 export interface ParentBridgeHandle {
   destroy(): void;
@@ -10,7 +8,6 @@ export interface ParentBridgeHandle {
 
 
 export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
-  alert('initParentBridge---' + session());
   const iframe = document.getElementById(iframeId) as HTMLIFrameElement | null;
   if (!iframe) throw new Error(`Parent bridge: no iframe found with id "${iframeId}".`);
   const remoteWindow = iframe.contentWindow;
@@ -21,33 +18,18 @@ export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
     messenger,
     methods: {
       async request(fnBody: string) {
-        alert(`[parent] request ${describeIntacctBody(String(fnBody ?? ''))}`);
-        try {
-          const { text, status } = await intacct(String(fnBody ?? ''));
-          alert(`[parent] response status=${status ?? '?'} chars=${text.length}`);
-          return { text, status: status ?? null };
-        } catch (err) {
-          alert(`[parent] FAILED: ${(err as Error).message}`);
-          throw err;
-        }
+        const { text, status } = await intacct(String(fnBody ?? ''));
+        return { text, status: status ?? null };
       },
       async submitForm(params: { values: Record<string, string> }) {
-        alert('[parent] submitForm — fill + submit parent form');
-        try {
-          const text = await submitTaskOrderForm(params?.values ?? {});
-          alert(`[parent] submitForm done chars=${text.length}`);
-          return { text };
-        } catch (err) {
-          alert(`[parent] submitForm FAILED: ${(err as Error).message}`);
-          throw err;
-        }
+        const text = await submitTaskOrderForm(params?.values ?? {});
+        return { text };
       },
     },
   });
-  connection.promise.then(
-    () => alert('[parent] bridge CONNECTED to child'),
-    (err) => alert(`[parent] bridge CONNECT FAILED: ${(err as Error).message}`),
-  );
+  // Handshake failures surface on the first call — swallow here so a
+  // missing/unready child never turns into an unhandled rejection.
+  connection.promise.catch(() => {});
 
   return { destroy: () => connection.destroy() };
 }

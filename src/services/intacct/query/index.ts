@@ -67,7 +67,6 @@ export async function query(
 
   // No session means this page runs iframed — route through the parent bridge.
   const via = hasSession() ? "direct" : "bridge";
-  alert(`[query] ${object} via ${via}`);
 
   let xml: Document;
   let status: string | undefined;
@@ -79,7 +78,6 @@ export async function query(
     status = res.status;
     text = res.text;
   } catch (err) {
-    alert(`FAILED:${(err as Error).message}`);
     console.error(`[query] ${object} via ${via} FAILED:`, err);
     throw err;
   }
@@ -92,7 +90,6 @@ export async function query(
   const data = [...xml.getElementsByTagName(object)].map((rec) =>
     XMLParser.elementToJson(rec),
   );
-  alert(`[query] ${object} status=${status} rows=${data.length}`);
 
   return {
     data,

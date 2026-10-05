@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import * as Popover from "@radix-ui/react-popover";
-import { Import, MoreHorizontal, Paperclip } from "lucide-react";
+import { Import, MoreVertical, Paperclip } from "lucide-react";
 import {
   StatusChip,
   Toolbar,
@@ -97,12 +97,6 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
     <div>
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2">
         <div className="flex items-center gap-2">
-          <div className="leading-tight">
-            <div className="text-[11px] text-[#008784]">Taskorder</div>
-            <div className="text-sm font-bold text-slate-900">
-              {params.name || "New Task Order"}
-            </div>
-          </div>
           <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
             <Popover.Trigger asChild>
               <button
@@ -111,7 +105,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
                 aria-label="More actions"
                 className="p-1.5 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4" />
               </button>
             </Popover.Trigger>
             <Popover.Portal>
@@ -145,11 +139,18 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
               </Popover.Content>
             </Popover.Portal>
           </Popover.Root>
+          <div className="leading-tight">
+            <div className="text-[11px] text-[#008784]">Taskorder</div>
+            <div className="text-sm font-bold text-slate-900">
+              {params.name || "New Task Order"}
+            </div>
+          </div>
         </div>
-        <nav
-          aria-label="Record sections"
-          className="flex items-stretch border border-slate-200 rounded-sm overflow-hidden ml-auto"
-        >
+        {!isNewPage && (
+          <nav
+            aria-label="Record sections"
+            className="flex items-stretch border border-slate-200 rounded-sm overflow-hidden ml-auto"
+          >
           {TABS.map((tab) => {
             const active = tab.id === activeTab;
             return (
@@ -174,7 +175,8 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
               </button>
             );
           })}
-        </nav>
+          </nav>
+        )}
       </header>
       <div className="pt-1 pb-4 rounded-md mt-2 grid grid-cols-[70%_40%]">
         <div>
@@ -184,7 +186,6 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
               loading={!!pending.new}
               onClick={async () => {
                 const v = getValues();
-                 alert(JSON.stringify(v));
                 const headerTx = taskOrderCollection.insert({
                   id: `taskorder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                   taskOrderName: v.name ?? "",
@@ -194,7 +195,6 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
                   endDate: v.date.end,
                 });
                 await headerTx.when("settled");
-                alert(JSON.stringify(headerTx.state));
                 if (headerTx.state !== "completed") {
                   throw new Error("Task order insert failed.");
                 }
