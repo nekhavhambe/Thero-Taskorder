@@ -5,11 +5,11 @@ import { SalesOrder } from "./page";
 import { Requisitions } from "./page";
 import { Cashflow } from "./page";
 import { Tasks } from "./page";
-import { useParams, toIsoDateParam } from "./hook/params";
+import { toIsoDateParam } from "./hook/params";
 import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
-import { taskOrderCollection, projectCollection } from "./collections";
+import { useLiveSuspenseQuery } from "@tanstack/react-db";
+import { taskOrderCollection } from "./collections";
 
 export interface TaskOrderConfig {
   id?: string;
@@ -20,16 +20,15 @@ export interface TaskOrderConfig {
 }
 
 function App() {
-  const { id } = useParams();
   const { data }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
-        eq(TaskOrders.RPROJECT, Project.RECORDNO),
-      )
-      .where(({ TaskOrders }) => eq(TaskOrders.ID, id))
-      .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
-      .findOne(),
+      // .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
+      //   eq(TaskOrders.RPROJECT, Project.RECORDNO),
+      // )
+      // .where(({ TaskOrders }) => eq(TaskOrders.ID, id))
+      // .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
+      // .findOne(),
   );
 
   const defaultValues = useMemo<TaskOrderConfig>(
