@@ -29,9 +29,9 @@ function toParentValues(data: CreateTaskOrderData): Record<string, string> {
  * text. Always runs on the parent page — never call this from the iframe.
  */
 export async function submitTaskOrderForm(values: Record<string, string>): Promise<string> {
-  const form = document.getElementById("theForm");
+  const form = document.forms.namedItem("theForm");
   if (!(form instanceof HTMLFormElement)) {
-    throw new Error("Form #theForm not found");
+    throw new Error('Form name="theForm" not found');
   }
   const formData = new FormData(form);
   for (const [key, value] of Object.entries(values)) formData.set(key, value);
