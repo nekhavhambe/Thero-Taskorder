@@ -39,8 +39,8 @@ function App() {
         start: toIsoDateParam(data.START_DATE),
         end: toIsoDateParam(data.END_DATE),
       },
-      name: data.NAME ?? "",
-      order: "",
+      name: data.TASK_DESCRIPTION ?? "",
+      order: data.PURCHASE_ORDER ?? "",
       project: {
         key: data?.Project.RECORDNO ?? "",
         name: data?.Project.NAME ?? "",
