@@ -34,17 +34,17 @@ function App() {
 
   const defaultValues = useMemo<TaskOrderConfig>(
     () => ({
-      id: data.ID ?? "",
+      id: data?.ID ?? "",
       date: {
-        start: toIsoDateParam(data.START_DATE),
-        end: toIsoDateParam(data.END_DATE),
+        start: toIsoDateParam(data?.START_DATE),
+        end: toIsoDateParam(data?.END_DATE),
       },
-      name: data.TASK_DESCRIPTION ?? "",
-      order: data.PURCHASE_ORDER ?? "",
+      name: data?.TASK_DESCRIPTION ?? "",
+      order: data?.PURCHASE_ORDER ?? "",
       project: {
-        key: data?.Project.RECORDNO ?? "",
-        name: data?.Project.NAME ?? "",
-        id: data?.Project.PROJECTID ?? "",
+        key: data?.Project?.RECORDNO ?? "",
+        name: data?.Project?.NAME ?? "",
+        id: data?.Project?.PROJECTID ?? "",
       },
     }),
     [data],

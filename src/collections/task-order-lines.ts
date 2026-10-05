@@ -29,7 +29,7 @@ const TASKORDER_ITEM_FIELDS = [
 ] as const;
 
 export interface TaskOrderLine {
-  /** Collection key — Intacct RECORDNO once synced, `line-…` temp id until then. */
+  /** Collection key — Intacct `id` once synced, `line-…` temp id until then. */
   id: string;
   /** Local taskOrderCollection key this line belongs to. */
   taskOrderId: string;
@@ -40,7 +40,7 @@ export interface TaskOrderLine {
   task: string;
   quantity: number | "" | null;
   rate: number | "" | null;
-  /** Created taskorder_item RECORDNO — filled in after the insert settles. */
+  /** Created taskorder_item `id` — filled in after the insert settles. */
   recordNo?: string;
 }
 
@@ -105,18 +105,20 @@ export const taskOrderLineCollection = createCollection(
         });
 
         return (data as unknown as Record<string, string>[]).flatMap((row) => {
-          const recordNo = String(row.RECORDNO ?? "").trim();
-          if (!recordNo) return [];
+          // This object keys records by `id` (no RECORDNO field).
+          const key = String(row.ID ?? "").trim();
+          if (!key) return [];
+          const description = String(row.TASKORDER_ITEM ?? "") || String(row.NAME ?? "");
           return [
             {
-              id: recordNo,
+              id: key,
               taskOrderId: "",
               taskOrderRecordNo: String(row.RTASKORDER_BUDGET ?? ""),
-              description: String(row.TASKORDER_ITEM ?? ""),
+              description,
               task: String(row.TASK ?? ""),
               quantity: numOrEmpty(row.QUANTITY),
               rate: numOrEmpty(row.RATE),
-              recordNo,
+              recordNo: key,
             } satisfies TaskOrderLine,
           ];
         });

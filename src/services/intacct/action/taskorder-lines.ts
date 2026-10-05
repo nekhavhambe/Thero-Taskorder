@@ -45,7 +45,10 @@ export async function create( data: CreateTaskOrderLineData ): Promise<CreateTas
     throw new Error(`taskorder_item create failed: ${text.slice(0, 500)}`);
   }
 
-  return { status, text, recordNo: XMLParser.field(xml, "RECORDNO") || undefined };
+  // Standard objects return RECORDNO; this custom object keys by `id`.
+  const recordNo =
+    XMLParser.field(xml, "RECORDNO") || XMLParser.field(xml, "ID") || undefined;
+  return { status, text, recordNo };
 }
 
 export interface UpdateTaskOrderLineData extends CreateTaskOrderLineData {
