@@ -40,7 +40,7 @@ export interface TaskOrderConfig {
 }
 
 const getStandardTaskKey = (task: StandardTask): string =>
-  task.RECORDNO?.trim() ? task.RECORDNO : task.TASKID || task.NAME;
+  task.RECORDNO?.trim() ? task.RECORDNO : task.STANDARDTASKID || task.NAME;
 
 const draftValue = (row: TaskOrderLineDraft): number =>
   (parseNumeric(row.quantity) ?? 0) * (parseNumeric(row.rate) ?? 0);
@@ -64,8 +64,8 @@ const buildDraftColumns = (
     editor: {
       kind: "autocomplete",
       collection: standardTaskCollection,
-      displayFields: ["TASKID", "NAME"],
-      searchFields: ["TASKID", "NAME", "RECORDNO"],
+          displayFields: ["STANDARDTASKID", "NAME"],
+          searchFields: ["STANDARDTASKID", "NAME", "RECORDNO"],
       getKey: getStandardTaskKey,
       placeholder: "Select a Task",
     },

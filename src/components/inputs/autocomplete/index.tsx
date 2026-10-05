@@ -85,7 +85,7 @@ function AutocompleteInner<T extends object>({
           String(record.id ?? '') === value ||
           String(record.recordNo ?? '') === value ||
           String(record.RECORDNO ?? '') === value ||
-          String(record.TASKID ?? '') === value
+          String(record.STANDARDTASKID ?? '') === value
         );
       }) ??
       items.find((item) => {
@@ -94,7 +94,7 @@ function AutocompleteInner<T extends object>({
           String(record.name ?? '').trim().toLowerCase() === needle ||
           String(record.NAME ?? '').trim().toLowerCase() === needle ||
           String(record.id ?? '').trim().toLowerCase() === needle ||
-          String(record.TASKID ?? '').trim().toLowerCase() === needle
+          String(record.STANDARDTASKID ?? '').trim().toLowerCase() === needle
         );
       }) ??
       null

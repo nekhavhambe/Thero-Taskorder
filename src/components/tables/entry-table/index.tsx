@@ -15,7 +15,7 @@ export type { CellContext, DataTableProps, EditorConfig, EntryColumn } from './t
 export interface LineItem {
   id: string;
   description: string;
-  /** Intacct STANDARDTASK RECORDNO (autocomplete shows TASKID--NAME, stores RECORDNO). */
+  /** Intacct STANDARDTASK RECORDNO (autocomplete shows STANDARDTASKID--NAME, stores RECORDNO). */
   task: string;
   qty: number | '' | null;
   rate: number | '' | null;
@@ -234,7 +234,7 @@ export const parseJSONToLineItems = (jsonText: string): LineItem[] => {
 // ==========================================
 
 const getStandardTaskKey = (task: StandardTask): string =>
-  task.RECORDNO?.trim() ? task.RECORDNO : task.TASKID || task.NAME;
+  task.RECORDNO?.trim() ? task.RECORDNO : task.STANDARDTASKID || task.NAME;
 
 export const buildLineItemColumns = (currencySymbol: string): EntryColumn<LineItem>[] => [
   {
@@ -253,8 +253,8 @@ export const buildLineItemColumns = (currencySymbol: string): EntryColumn<LineIt
     editor: {
       kind: 'autocomplete',
       collection: standardTaskCollection,
-      displayFields: ['TASKID', 'NAME'],
-      searchFields: ['TASKID', 'NAME', 'RECORDNO'],
+      displayFields: ['STANDARDTASKID', 'NAME'],
+      searchFields: ['STANDARDTASKID', 'NAME', 'RECORDNO'],
       getKey: getStandardTaskKey,
       placeholder: 'Select a Task',
     },
@@ -472,7 +472,7 @@ export const RequisitionTable: React.FC<RequisitionTableProps> = ({
     const groups = new Map<string, StandardTask[]>();
     for (const t of tasks) {
       const n = (t.NAME ?? '').trim().toLowerCase();
-      const k = n || `id:${t.TASKID}`;
+      const k = n || `id:${t.STANDARDTASKID}`;
       const members = groups.get(k);
       if (members) members.push(t);
       else groups.set(k, [t]);
@@ -482,7 +482,7 @@ export const RequisitionTable: React.FC<RequisitionTableProps> = ({
       const winner = members.find((m) => m.RECORDNO?.trim()) ?? members[0];
       for (const m of members) {
         best.set(getStandardTaskKey(m), winner);
-        best.set(m.TASKID, winner);
+        best.set(m.STANDARDTASKID, winner);
         if (m.RECORDNO) best.set(m.RECORDNO.trim(), winner);
         const n = (m.NAME ?? '').trim().toLowerCase();
         if (n) best.set(`name:${n}`, winner);

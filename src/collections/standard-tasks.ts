@@ -5,7 +5,7 @@ import { query } from "../services/intacct/query";
 
 export interface StandardTask {
   RECORDNO: string;
-  TASKID: string;
+  STANDARDTASKID: string;
   NAME: string;
   DESCRIPTION?: string;
   STATUS?: string;
@@ -21,8 +21,8 @@ export const standardTaskCollection = createCollection(
       try {
         const { data } = await query({
           object: "STANDARDTASK",
-          fields: ["RECORDNO","TASKID","NAME","DESCRIPTION", "STATUS"],
-          orderBy: "TASKID",
+          fields: ["RECORDNO","STANDARDTASKID","NAME","DESCRIPTION", "STATUS"],
+          orderBy: "STANDARDTASKID",
         });
    
         return data || [];

@@ -14,7 +14,7 @@ const taskColumns: EntryColumn<StandardTask>[] = [
     align: 'left',
     display: (row) => (
       <div className="py-1.5 px-2 text-xs font-medium text-slate-900 truncate">
-        {(row.TASKID ?? '').trim() || '—'}
+        {(row.STANDARDTASKID ?? '').trim() || '—'}
       </div>
     ),
   },
@@ -64,7 +64,7 @@ export const Tasks: FC = () => {
         data={rows}
         onChange={() => {}}
         columns={taskColumns}
-        getRowId={(row) => (row.RECORDNO?.trim() ? row.RECORDNO : row.TASKID || row.NAME)}
+        getRowId={(row) => (row.RECORDNO?.trim() ? row.RECORDNO : row.STANDARDTASKID || row.NAME)}
         createRow={() => ({}) as StandardTask}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
