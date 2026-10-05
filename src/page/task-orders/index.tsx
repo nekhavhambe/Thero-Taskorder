@@ -1,28 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Field } from "../../components/forms/field";
 import { TextInput } from "../../components/inputs/textinput";
 import { Autocomplete } from "../../components/inputs/autocomplete";
 import { DatePicker } from "../../components/inputs/datepicker";
 import {
-  DataTable,
   SUPPORTED_CURRENCIES,
-  TABLE_IMPORT_EVENT,
-  TABLE_UPLOAD_EVENT,
-  TotalsSummary,
-  formatCurrency,
-  parseCSVToLineItems,
-  parseJSONToLineItems,
-  parseNumeric,
-} from "../../components/tables/entry-table";
-import type { EntryColumn } from "../../components/tables/entry-table";
+  TaskOrderLinesTable,
+} from "../../components/tables/taskorder-lines";
 import type { Project } from "../../collections/projects";
 import { projectCollection } from "../../collections/projects";
-import { taskOrderLineDraftCollection } from "../../collections/task-order-lines";
-import type { TaskOrderLineDraft } from "../../collections/task-order-lines";
-import { useCollectionItems } from "../../collections/helpers";
-import type { StandardTask } from "../../collections/standard-tasks";
-import { standardTaskCollection } from "../../collections/standard-tasks";
 import { useParams } from "../../hook/params";
 
 export interface TaskOrderConfig {
@@ -33,192 +20,34 @@ export interface TaskOrderConfig {
   date: { start: string; end: string };
 }
 
-const getStandardTaskKey = (task: StandardTask): string =>
-  task.RECORDNO?.trim() ? task.RECORDNO : task.STANDARDTASKID || task.NAME;
-
-const draftValue = (row: TaskOrderLineDraft): number =>
-  (parseNumeric(row.quantity) ?? 0) * (parseNumeric(row.rate) ?? 0);
-
-const buildDraftColumns = (
-  currencySymbol: string,
-): EntryColumn<TaskOrderLineDraft>[] => [
-  {
-    key: "description",
-    header: "Description",
-    width: 320,
-    align: "left",
-    editor: { kind: "text" },
-    footer: () => <span className="text-slate-900 font-bold">Total</span>,
-  },
-  {
-    key: "task",
-    header: "Task",
-    width: 300,
-    align: "left",
-    editor: {
-      kind: "autocomplete",
-      collection: standardTaskCollection,
-          displayFields: ["STANDARDTASKID", "NAME"],
-          searchFields: ["STANDARDTASKID", "NAME", "RECORDNO"],
-      getKey: getStandardTaskKey,
-      placeholder: "Select a Task",
-    },
-  },
-  {
-    key: "quantity",
-    header: "Qty",
-    width: 110,
-    align: "right",
-    editor: { kind: "number", min: 0, placeholder: "0" },
-  },
-  {
-    key: "rate",
-    header: "Rate",
-    width: 130,
-    align: "right",
-    editor: { kind: "number", min: 0, step: 0.01, placeholder: "0" },
-  },
-  {
-    key: "value",
-    header: "Value",
-    width: 150,
-    align: "right",
-    display: (row) => (
-      <div className="py-1.5 px-2 text-right tabular-nums text-xs text-slate-800">
-        {formatCurrency(draftValue(row), currencySymbol)}
-      </div>
-    ),
-    footer: (rows) => (
-      <span className="font-bold text-slate-900">
-        {formatCurrency(
-          rows.reduce((sum, r) => sum + draftValue(r), 0),
-          currencySymbol,
-        )}
-      </span>
-    ),
-  },
-];
-
-const createDraftRow = (): TaskOrderLineDraft => ({
-  id: `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  description: "",
-  task: "",
-  quantity: 0,
-  rate: 0,
-});
-
 export const TaskOrders = () => {
   const { register, control } = useFormContext<TaskOrderConfig>();
   const { page } = useParams();
-  // ?page=new → header-fields-only mode: hide the lines table + totals so
-  // the user just captures the task order information.
   const isNewPage = page === "new";
-  const drafts = useCollectionItems<TaskOrderLineDraft>( taskOrderLineDraftCollection);
-
   const [pageSize, setPageSize] = useState(10);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const currency = SUPPORTED_CURRENCIES[0];
-  const seededRef = useRef(false);
 
-  useEffect(() => {
-    if (!seededRef.current && drafts.length === 0) {
-      seededRef.current = true;
-      taskOrderLineDraftCollection.insert(createDraftRow());
-    }
-  }, [drafts]);
-
-  const columns = useMemo(
-    () => buildDraftColumns(currency.symbol),
-    [currency.symbol],
-  );
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadInputRef = useRef<HTMLInputElement>(null);
-
-  const getProjectKey = (project: Project): string =>
-    project.RECORDNO?.trim() ? project.RECORDNO : project.PROJECTID;
+  const getProjectKey = (project: Project): string => project.RECORDNO?.trim() ? project.RECORDNO : project.PROJECTID;
 
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3200);
   };
 
-  // Collection-direct CRUD lives inside DataTable now: cell commits call
-  // `taskOrderLineDraftCollection.update(key, …)` and await `when('settled')`,
-  // Add-line calls `insert()`, delete calls `delete()` — no local diffing here.
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const items = file.name.endsWith(".json")
-        ? parseJSONToLineItems(text)
-        : parseCSVToLineItems(text);
-
-      if (items.length > 0) {
-        taskOrderLineDraftCollection.insert(
-          items.map((item) => ({
-            id: `draft-imported-${Date.now()}-${Math.random()
-              .toString(36)
-              .slice(2)}`,
-            description: item.description,
-            task: item.task,
-            quantity: item.qty,
-            rate: item.rate,
-          })),
-        );
-        showToast(`Imported ${items.length} line item(s).`);
-      }
-    } catch (err) {
-      console.error("Failed to import file:", err);
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+  const handleImportSuccess = (count: number) => {
+    showToast(`Imported ${count} line item(s).`);
   };
 
-  const handleUploadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = [...(e.target.files ?? [])];
-    if (files.length > 0) {
-      const names = files.map((f) => f.name).join(", ");
-      showToast(
-        `Attached ${files.length} file${files.length === 1 ? "" : "s"}: ${names}`,
-      );
-    }
-    if (uploadInputRef.current) uploadInputRef.current.value = "";
+  const handleUploadSuccess = (files: File[]) => {
+    const names = files.map((f) => f.name).join(", ");
+    showToast(
+      `Attached ${files.length} file${files.length === 1 ? "" : "s"}: ${names}`,
+    );
   };
-
-  useEffect(() => {
-    const openImport = () => fileInputRef.current?.click();
-    const openUpload = () => uploadInputRef.current?.click();
-    window.addEventListener(TABLE_IMPORT_EVENT, openImport);
-    window.addEventListener(TABLE_UPLOAD_EVENT, openUpload);
-    return () => {
-      window.removeEventListener(TABLE_IMPORT_EVENT, openImport);
-      window.removeEventListener(TABLE_UPLOAD_EVENT, openUpload);
-    };
-  }, []);
-
-  const untaxed = drafts.reduce((sum, d) => sum + draftValue(d), 0);
 
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept=".csv, .json, text/csv, application/json"
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={uploadInputRef}
-        onChange={handleUploadChange}
-        multiple
-        className="hidden"
-        aria-label="Upload supporting documents"
-      />
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs px-3.5 py-2 rounded-md shadow-lg border border-slate-700 animate-fade-in">
           {toastMessage}
@@ -306,24 +135,15 @@ export const TaskOrders = () => {
       </div>
       {!isNewPage && (
         <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
-          <DataTable<TaskOrderLineDraft>
-            collection={taskOrderLineDraftCollection}
-            columns={columns}
-            createRow={createDraftRow}
+          <TaskOrderLinesTable
+            currency={currency}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
-            reorderable={false}
-            minWidth={980}
-          />
-          <TotalsSummary
-            untaxed={untaxed}
-            taxRate={0.15}
-            currencySymbol={currency.symbol}
+            onImportSuccess={handleImportSuccess}
+            onUploadSuccess={handleUploadSuccess}
           />
         </div>
       )}
     </>
   );
 };
-
-

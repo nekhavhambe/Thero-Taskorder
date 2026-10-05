@@ -80,3 +80,23 @@ export async function update(data: UpdateTaskOrderLineData): Promise<UpdateTaskO
 
   return { status, text };
 }
+
+export interface DeleteTaskOrderLineResult {
+  status?: string;
+  text: string;
+}
+
+export async function remove(recordNo: string): Promise<DeleteTaskOrderLineResult> {
+  const { status, text } = await intacct(`
+      <function controlid="delete_taskorder_line">
+        <delete>
+          <taskorder_item key="${XMLParser.escapeXml(recordNo)}" />
+        </delete>
+      </function>`);
+
+  if (status !== "success") {
+    throw new Error(`taskorder_item delete failed: ${text.slice(0, 500)}`);
+  }
+
+  return { status, text };
+}

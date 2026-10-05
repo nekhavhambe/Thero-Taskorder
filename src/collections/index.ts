@@ -23,7 +23,7 @@ export {
 export type { FetchBudgetActualsOptions } from './budgetActuals';
 export { taskOrderCollection } from './task-order';
 export type { TaskOrder } from './task-order';
-export { taskOrderLineCollection, taskOrderLineDraftCollection } from './task-order-lines';
-export type { TaskOrderLine, TaskOrderLineDraft } from './task-order-lines';
+export { taskOrderLineCollection, TASKORDER_ITEM_OBJECT } from './task-order-lines';
+export type { TaskOrderLine } from './task-order-lines';
 export { formatDisplayFields, useCollectionItems } from './helpers';
 export type { AnyCollection } from './helpers';

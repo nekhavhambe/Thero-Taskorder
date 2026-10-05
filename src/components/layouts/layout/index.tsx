@@ -13,7 +13,7 @@ import type { ToolbarAction } from "../toolbar";
 import {
   requestTableImport,
   requestTableUpload,
-} from "../../tables/entry-table";
+} from "../../tables/taskorder-lines";
 import Container from "../container";
 import { useParams } from "../../../hook/params";
 import { useFormContext } from "react-hook-form";
@@ -58,6 +58,11 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   // ?page=new → header-fields-only mode: hide status pill, action buttons,
   // and (in the page) the lines table, so the user just captures the order.
   const isNewPage = params.page === "new";
+  // Task-order page (edit mode) → the primary button becomes Save and
+  // writes through taskOrderCollection.update instead of insert.
+  const isTaskOrderPage =
+    location.pathname.startsWith("/task-order") || activeTab === "task-order";
+  const showSave = isTaskOrderPage && !isNewPage;
 
   useEffect(() => {
     if (location.pathname.startsWith("/form")) setActiveTab("sales-order");
@@ -183,24 +188,55 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
           <Toolbar aside={isNewPage ? undefined : <StatusChip status={status} />}>
             <ToolbarButton
               variant="blue"
-              loading={!!pending.new}
+              loading={!!pending.new || !!pending.save}
               onClick={async () => {
-                const v = getValues();
-                const headerTx = taskOrderCollection.insert({
-                  id: `taskorder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                  taskOrderName: v.name ?? "",
-                  purchaseOrder: v.order ?? "",
-                  project: v.project?.key ?? "",
-                  startDate: v.date.start,
-                  endDate: v.date.end,
-                });
-                await headerTx.when("settled");
-                if (headerTx.state !== "completed") {
-                  throw new Error("Task order insert failed.");
+                if (showSave) {
+                  setBusy("save", true);
+                  try {
+                    const v = getValues();
+                    const key = v.id || params.id;
+                    if (!key) {
+                      throw new Error("Missing task order id — cannot save.");
+                    }
+                    const saveTx = taskOrderCollection.update(key, (draft) => {
+                      Object.assign(draft, {
+                        taskOrderName: v.name ?? "",
+                        purchaseOrder: v.order ?? "",
+                        project: v.project?.key ?? "",
+                        startDate: v.date.start,
+                        endDate: v.date.end,
+                      });
+                    });
+                    await saveTx.when("settled");
+                    if (saveTx.state !== "completed") {
+                      throw new Error("Task order save failed.");
+                    }
+                  } finally {
+                    setBusy("save", false);
+                  }
+                  return;
+                }
+                setBusy("new", true);
+                try {
+                  const v = getValues();
+                  const headerTx = taskOrderCollection.insert({
+                    id: `taskorder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    taskOrderName: v.name ?? "",
+                    purchaseOrder: v.order ?? "",
+                    project: v.project?.key ?? "",
+                    startDate: v.date.start,
+                    endDate: v.date.end,
+                  });
+                  await headerTx.when("settled");
+                  if (headerTx.state !== "completed") {
+                    throw new Error("Task order insert failed.");
+                  }
+                } finally {
+                  setBusy("new", false);
                 }
               }}
             >
-              New
+              {showSave ? "Save" : "New"}
             </ToolbarButton>
             {isNewPage ? null : (
               <>

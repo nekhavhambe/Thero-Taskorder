@@ -1,13 +1,20 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import type { ColumnDef, PaginationState, Row } from '@tanstack/react-table';
-import type { ColumnSizingState } from '@tanstack/react-table';
+} from "@tanstack/react-table";
+import type { ColumnDef, PaginationState, Row } from "@tanstack/react-table";
+import type { ColumnSizingState } from "@tanstack/react-table";
 import {
   DndContext,
   KeyboardSensor,
@@ -15,16 +22,16 @@ import {
   closestCenter,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   Plus,
   Trash2,
@@ -33,14 +40,14 @@ import {
   ChevronRight,
   ChevronsRight,
   Loader2,
-} from 'lucide-react';
-import { useLiveSuspenseQuery } from '@tanstack/react-db';
-import { TextInput } from '../../inputs/textinput';
-import { NumericInput } from '../../inputs/numericinput';
-import { DatePicker } from '../../inputs/datepicker';
-import { Select as StdSelect } from '../../inputs/select';
-import { Autocomplete } from '../../inputs/autocomplete';
-import type { AnyCollection } from '../../../collections/helpers';
+} from "lucide-react";
+import { useLiveSuspenseQuery } from "@tanstack/react-db";
+import { TextInput } from "../../inputs/textinput";
+import { NumericInput } from "../../inputs/numericinput";
+import { DatePicker } from "../../inputs/datepicker";
+import { Select as StdSelect } from "../../inputs/select";
+import { Autocomplete } from "../../inputs/autocomplete";
+import type { AnyCollection } from "../../../collections/helpers";
 
 // ==========================================
 // COLUMN CONFIGURATION
@@ -54,34 +61,37 @@ export interface CellContext<T> {
 }
 
 export type EditorConfig =
-  | { kind: 'text'; placeholder?: string }
-  | { kind: 'number'; min?: number; max?: number; step?: number; placeholder?: string }
-  | { kind: 'date'; placeholder?: string }
+  | { kind: "text"; placeholder?: string }
   | {
-      kind: 'select';
+      kind: "number";
+      min?: number;
+      max?: number;
+      step?: number;
+      placeholder?: string;
+    }
+  | { kind: "date"; placeholder?: string }
+  | {
+      kind: "select";
       options: { value: string; label: string }[];
       placeholder?: string;
     }
   | {
-      kind: 'autocomplete';
+      kind: "autocomplete";
       collection: AnyCollection;
       displayFields: string[];
       getKey?: (item: any) => string;
       searchFields?: string[];
       placeholder?: string;
     }
-  | { kind: 'custom'; render: (ctx: CellContext<any>) => ReactNode };
+  | { kind: "custom"; render: (ctx: CellContext<any>) => ReactNode };
 
 export interface EntryColumn<T> {
-  /** Row field this column reads/writes (ignored when `display` is set). */
   key: string;
   header: string;
   width?: number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   editor?: EditorConfig;
-  /** Read-only cell content (e.g. computed values). Takes precedence over `editor`. */
   display?: (row: T) => ReactNode;
-  /** Footer cell content for this column (e.g. column totals). */
   footer?: (rows: T[]) => ReactNode;
 }
 
@@ -91,20 +101,20 @@ export interface EntryColumn<T> {
 
 interface TableChromeProps {
   columns: EntryColumn<any>[];
-  /** Required when rows carry no `id` field (defaults to `row.id` / collection key). */
-  getRowId?: (row: any) => string;
-  /** Factory for blank rows (inserted via `collection.insert()` in collection mode). */
-  createRow: () => any;
   pageSize?: number;
-  onPageSizeChange?: (size: number) => void;
   reorderable?: boolean;
   removable?: boolean;
   showRowNumbers?: boolean;
   emptyText?: string;
   minWidth?: number;
+  onPageSizeChange?: (size: number) => void;
+  getRowId?: (row: any) => string;
+  createRow: () => any;
 }
 
-export interface StaticDataTableProps<T extends object> extends TableChromeProps {
+export interface StaticDataTableProps<
+  T extends object,
+> extends TableChromeProps {
   collection?: never;
   data: T[];
   onChange: (rows: T[]) => void;
@@ -113,7 +123,9 @@ export interface StaticDataTableProps<T extends object> extends TableChromeProps
   createRow: () => T;
 }
 
-export interface CollectionDataTableProps<T extends object> extends TableChromeProps {
+export interface CollectionDataTableProps<
+  T extends object,
+> extends TableChromeProps {
   /** TanStack collection backing the grid — rows come from a live query on it. */
   collection: AnyCollection;
   data?: never;
@@ -129,7 +141,7 @@ export interface CollectionDataTableProps<T extends object> extends TableChromeP
   where?: (aliases: any) => any;
   /** Live-query sort, e.g. `({ c }) => c.createdAt`. */
   orderBy?: (aliases: any) => any;
-  orderDirection?: 'asc' | 'desc';
+  orderDirection?: "asc" | "desc";
   limit?: number;
 }
 
@@ -145,11 +157,11 @@ export type DataTableProps<T extends object> =
 async function waitForPersist(tx: unknown): Promise<void> {
   if (tx == null) return;
   const t = tx as {
-    when?: (state: 'settled') => Promise<unknown>;
+    when?: (state: "settled") => Promise<unknown>;
     isPersisted?: { promise: Promise<unknown> };
   };
-  if (typeof t.when === 'function') {
-    await t.when('settled');
+  if (typeof t.when === "function") {
+    await t.when("settled");
     return;
   }
   if (t.isPersisted) {
@@ -161,26 +173,38 @@ async function waitForPersist(tx: unknown): Promise<void> {
 
 /** Unwrap live-query rows (tolerates `{ row }`-wrapped results). */
 function normalizeLiveRows<T>(liveData: unknown): T[] {
-  const rows = (liveData ?? []) as Array<T | { row?: T | null } | undefined | null>;
+  const rows = (liveData ?? []) as Array<
+    T | { row?: T | null } | undefined | null
+  >;
   return rows.flatMap((r) => {
     if (r == null) return [];
-    if (typeof r === 'object' && 'row' in r && (r as { row?: unknown }).row != null) {
+    if (
+      typeof r === "object" &&
+      "row" in r &&
+      (r as { row?: unknown }).row != null
+    ) {
       return [(r as { row: T }).row];
     }
     return [r as T];
   });
 }
 
-function defaultResolveId<T>(collection: AnyCollection | undefined, row: T): string {
+function defaultResolveId<T>(
+  collection: AnyCollection | undefined,
+  row: T,
+): string {
   if (collection) {
     try {
-      const key = (collection as unknown as { getKeyFromItem: (item: T) => unknown }).getKeyFromItem(row);
-      if (key !== undefined && key !== null && String(key) !== '') return String(key);
+      const key = (
+        collection as unknown as { getKeyFromItem: (item: T) => unknown }
+      ).getKeyFromItem(row);
+      if (key !== undefined && key !== null && String(key) !== "")
+        return String(key);
     } catch {
       // fall through to row.id
     }
   }
-  return String((row as { id?: unknown }).id ?? '');
+  return String((row as { id?: unknown }).id ?? "");
 }
 
 // ==========================================
@@ -219,7 +243,7 @@ function TextCell({
         setDraft(null);
         if (next !== null && next !== value) void onCommit(next);
       }}
-      placeholder={placeholder ?? ''}
+      placeholder={placeholder ?? ""}
     />
   );
 }
@@ -229,7 +253,14 @@ function TextCell({
 // ==========================================
 
 function DraggableRow<T>({ row }: { row: Row<T> }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: (row.original as { id: string }).id,
   });
 
@@ -237,8 +268,8 @@ function DraggableRow<T>({ row }: { row: Row<T> }) {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 20 : 1,
-    position: isDragging ? 'relative' : undefined,
-    fontFamily: 'Arial, Helvetica, sans-serif',
+    position: isDragging ? "relative" : undefined,
+    fontFamily: "Arial, Helvetica, sans-serif",
   };
 
   return (
@@ -246,16 +277,18 @@ function DraggableRow<T>({ row }: { row: Row<T> }) {
       ref={setNodeRef}
       style={style}
       className={`group transition-colors duration-150 border-b border-slate-200 ${
-        isDragging ? 'bg-sky-50/90 shadow-md ring-1 ring-sky-300' : 'bg-white hover:bg-slate-50/80'
+        isDragging
+          ? "bg-sky-50/90 shadow-md ring-1 ring-sky-300"
+          : "bg-white hover:bg-slate-50/80"
       }`}
     >
       {row.getVisibleCells().map((cell) => {
-        const isDragColumn = cell.column.id === 'dragHandle';
+        const isDragColumn = cell.column.id === "dragHandle";
         return (
           <td
             key={cell.id}
             className={`py-0 px-1.5 text-xs text-slate-700 align-middle ${
-              isDragColumn ? 'text-center' : ''
+              isDragColumn ? "text-center" : ""
             }`}
           >
             {isDragColumn ? (
@@ -265,7 +298,10 @@ function DraggableRow<T>({ row }: { row: Row<T> }) {
                 title="Drag to reorder row"
                 className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-slate-700 active:text-sky-600 cursor-grab active:cursor-grabbing hover:bg-slate-100 rounded transition-colors"
               >
-                <div className="flex flex-col gap-[2.5px] items-center justify-center w-3.5" aria-hidden="true">
+                <div
+                  className="flex flex-col gap-[2.5px] items-center justify-center w-3.5"
+                  aria-hidden="true"
+                >
                   <span className="w-3.5 h-[1.5px] bg-slate-500 rounded-sm"></span>
                   <span className="w-3.5 h-[1.5px] bg-slate-500 rounded-sm"></span>
                   <span className="w-3.5 h-[1.5px] bg-slate-500 rounded-sm"></span>
@@ -289,7 +325,11 @@ interface TableViewProps<T extends object> {
   rows: T[];
   columns: EntryColumn<T>[];
   resolveId: (row: T) => string;
-  onUpdate: (key: string, globalIndex: number, patch: Partial<T>) => void | Promise<void>;
+  onUpdate: (
+    key: string,
+    globalIndex: number,
+    patch: Partial<T>,
+  ) => void | Promise<void>;
   onInsert: () => void | Promise<void>;
   onInsertBelow: (globalIndex: number) => void | Promise<void>;
   onDelete: (key: string, globalIndex: number) => void | Promise<void>;
@@ -320,10 +360,13 @@ function TableView<T extends object>({
   reorderable = true,
   removable = true,
   showRowNumbers = true,
-  emptyText = 'No rows yet. Add a line to get started.',
+  emptyText = "No rows yet. Add a line to get started.",
   minWidth = 980,
 }: TableViewProps<T>) {
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize,
+  });
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   // Stable callbacks via ref so column defs never remount cells mid-type.
@@ -338,79 +381,95 @@ function TableView<T extends object>({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
-  const handleDragEnd = (event: import('@dnd-kit/core').DragEndEvent) => {
+  const handleDragEnd = (event: import("@dnd-kit/core").DragEndEvent) => {
     if (!onReorder) return;
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      const oldIndex = rows.findIndex((item) => resolveIdRef.current(item) === active.id);
-      const newIndex = rows.findIndex((item) => resolveIdRef.current(item) === over.id);
+      const oldIndex = rows.findIndex(
+        (item) => resolveIdRef.current(item) === active.id,
+      );
+      const newIndex = rows.findIndex(
+        (item) => resolveIdRef.current(item) === over.id,
+      );
       if (oldIndex !== -1 && newIndex !== -1) onReorder(oldIndex, newIndex);
     }
   };
 
-  const renderEditor = (col: EntryColumn<T>, row: T, key: string, globalIndex: number) => {
+  const renderEditor = (
+    col: EntryColumn<T>,
+    row: T,
+    key: string,
+    globalIndex: number,
+  ) => {
     const record = row as Record<string, unknown>;
-    const update = (patch: Partial<T>) => callbacksRef.current.onUpdate(key, globalIndex, patch);
+    const update = (patch: Partial<T>) =>
+      callbacksRef.current.onUpdate(key, globalIndex, patch);
     const editor = col.editor;
     if (!editor) return <span className="px-2 text-slate-400">—</span>;
 
     switch (editor.kind) {
-      case 'text':
+      case "text":
         return (
           <TextCell
-            value={String(record[col.key] ?? '')}
+            value={String(record[col.key] ?? "")}
             placeholder={editor.placeholder}
             onCommit={(v) => update({ [col.key]: v } as Partial<T>)}
           />
         );
-      case 'number':
+      case "number":
         return (
           <NumericInput
             mask
             commitOnBlur
             variant="ghost"
-            value={(record[col.key] as number | '' | null) ?? ''}
+            value={(record[col.key] as number | "" | null) ?? ""}
             onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             min={editor.min}
             max={editor.max}
             step={editor.step}
-            placeholder={editor.placeholder ?? ''}
+            placeholder={editor.placeholder ?? ""}
             className="text-right tabular-nums"
           />
         );
-      case 'date':
+      case "date":
         return (
           <DatePicker
-            value={String(record[col.key] ?? '')}
+            value={String(record[col.key] ?? "")}
             onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             placeholder={editor.placeholder}
           />
         );
-      case 'select':
+      case "select":
         return (
           <StdSelect
-            value={String(record[col.key] ?? '')}
+            value={String(record[col.key] ?? "")}
             onChange={(val) => void update({ [col.key]: val } as Partial<T>)}
             options={editor.options}
             placeholder={editor.placeholder}
           />
         );
-      case 'autocomplete':
+      case "autocomplete":
         return (
           <Autocomplete
             collection={editor.collection}
             displayFields={editor.displayFields}
             getKey={editor.getKey}
             searchFields={editor.searchFields}
-            value={record[col.key] != null && record[col.key] !== '' ? String(record[col.key]) : null}
-            onChange={(key) => update({ [col.key]: key ?? '' } as Partial<T>)}
+            value={
+              record[col.key] != null && record[col.key] !== ""
+                ? String(record[col.key])
+                : null
+            }
+            onChange={(key) => update({ [col.key]: key ?? "" } as Partial<T>)}
             placeholder={editor.placeholder}
           />
         );
-      case 'custom':
+      case "custom":
         return <>{editor.render({ row, globalIndex, update })}</>;
       default:
         return null;
@@ -424,7 +483,7 @@ function TableView<T extends object>({
 
     if (showDragHandle) {
       cols.push({
-        id: 'dragHandle',
+        id: "dragHandle",
         header: () => (
           <div className="w-7 flex items-center justify-center text-slate-400">
             <span className="sr-only">Reorder</span>
@@ -437,14 +496,15 @@ function TableView<T extends object>({
 
     if (showRowNumbers) {
       cols.push({
-        id: 'rowNumber',
+        id: "rowNumber",
         header: () => <span className="sr-only">#</span>,
         cell: ({ row }) => {
-          const globalNum = row.index + 1 + pagination.pageIndex * pagination.pageSize;
+          const globalNum =
+            row.index + 1 + pagination.pageIndex * pagination.pageSize;
           return (
             <div
               className="w-6 text-center tabular-nums text-[11px] text-slate-500 font-medium select-none"
-              style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
             >
               {globalNum}
             </div>
@@ -456,19 +516,36 @@ function TableView<T extends object>({
 
     for (const col of columns) {
       const alignClass =
-        col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left';
+        col.align === "right"
+          ? "text-right"
+          : col.align === "center"
+            ? "text-center"
+            : "text-left";
       cols.push({
         id: col.key,
-        header: () => <div className={`w-full ${alignClass}`}><span className="font-semibold text-slate-700">{col.header}</span></div>,
+        header: () => (
+          <div className={`w-full ${alignClass}`}>
+            <span className="font-semibold text-slate-700">{col.header}</span>
+          </div>
+        ),
         cell: ({ row }) => {
-          const globalIdx = row.index + pagination.pageIndex * pagination.pageSize;
+          const globalIdx =
+            row.index + pagination.pageIndex * pagination.pageSize;
           const key = resolveIdRef.current(row.original);
           const busy = isRowBusy?.(key) ?? false;
           const alignClass =
-            col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left';
+            col.align === "right"
+              ? "text-right"
+              : col.align === "center"
+                ? "text-center"
+                : "text-left";
           return (
-            <div className={`w-full ${alignClass} ${busy ? 'opacity-50 pointer-events-none' : ''}`}>
-              {col.display ? col.display(row.original) : renderEditor(col, row.original, key, globalIdx)}
+            <div
+              className={`w-full ${alignClass} ${busy ? "opacity-50 pointer-events-none" : ""}`}
+            >
+              {col.display
+                ? col.display(row.original)
+                : renderEditor(col, row.original, key, globalIdx)}
             </div>
           );
         },
@@ -478,21 +555,24 @@ function TableView<T extends object>({
 
     if (removable) {
       cols.push({
-        id: 'actions',
+        id: "actions",
         header: () => (
           <div className="w-full text-center">
             <span className="font-semibold text-slate-700">Actions</span>
           </div>
         ),
         cell: ({ row }) => {
-          const globalIdx = row.index + pagination.pageIndex * pagination.pageSize;
+          const globalIdx =
+            row.index + pagination.pageIndex * pagination.pageSize;
           const key = resolveIdRef.current(row.original);
           const busy = isRowBusy?.(key) ?? false;
           return (
             <div className="flex items-center justify-center gap-1.5 px-1">
               <button
                 type="button"
-                onClick={() => void callbacksRef.current.onInsertBelow(globalIdx)}
+                onClick={() =>
+                  void callbacksRef.current.onInsertBelow(globalIdx)
+                }
                 title="Insert line below"
                 className="p-1 text-slate-400 hover:text-sky-700 hover:bg-slate-100 rounded transition-colors cursor-pointer inline-flex items-center justify-center"
               >
@@ -500,12 +580,18 @@ function TableView<T extends object>({
               </button>
               <button
                 type="button"
-                onClick={() => void callbacksRef.current.onDelete(key, globalIdx)}
+                onClick={() =>
+                  void callbacksRef.current.onDelete(key, globalIdx)
+                }
                 disabled={busy}
                 title="Delete line"
                 className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-40"
               >
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                {busy ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
               </button>
             </div>
           );
@@ -518,7 +604,14 @@ function TableView<T extends object>({
     // Columns stay referentially stable across keystrokes (updaters read via
     // callbacksRef) so cells never remount and inputs never lose focus.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, showDragHandle, removable, showRowNumbers, pagination.pageIndex, pagination.pageSize]);
+  }, [
+    columns,
+    showDragHandle,
+    removable,
+    showRowNumbers,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   const table = useReactTable({
     data: rows,
@@ -526,7 +619,7 @@ function TableView<T extends object>({
     state: { pagination, columnSizing },
     onPaginationChange: setPagination,
     onColumnSizingChange: setColumnSizing,
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getRowId: (original) => resolveIdRef.current(original),
@@ -543,18 +636,51 @@ function TableView<T extends object>({
     const canPrevious = table.getCanPreviousPage();
     const canNext = table.getCanNextPage();
     const btn = (enabled: boolean) =>
-      `p-0.5 rounded transition-colors ${enabled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200 cursor-pointer' : 'text-slate-300 cursor-not-allowed'}`;
+      `p-0.5 rounded transition-colors ${enabled ? "text-slate-600 hover:text-slate-900 hover:bg-slate-200 cursor-pointer" : "text-slate-300 cursor-not-allowed"}`;
     return (
-      <div className="flex items-center gap-1 text-xs select-none" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <button type="button" onClick={() => table.setPageIndex(0)} disabled={!canPrevious} title="First Page"
-          className={btn(canPrevious)}><ChevronsLeft className="w-3.5 h-3.5" /></button>
-        <button type="button" onClick={() => table.previousPage()} disabled={!canPrevious} title="Previous Page"
-          className={btn(canPrevious)}><ChevronLeft className="w-3.5 h-3.5" /></button>
-        <span className="text-slate-700 text-xs font-medium px-1 whitespace-nowrap">Page {pageIndex + 1} of {pageCount}</span>
-        <button type="button" onClick={() => table.nextPage()} disabled={!canNext} title="Next Page"
-          className={btn(canNext)}><ChevronRight className="w-3.5 h-3.5" /></button>
-        <button type="button" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!canNext} title="Last Page"
-          className={btn(canNext)}><ChevronsRight className="w-3.5 h-3.5" /></button>
+      <div
+        className="flex items-center gap-1 text-xs select-none"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
+        <button
+          type="button"
+          onClick={() => table.setPageIndex(0)}
+          disabled={!canPrevious}
+          title="First Page"
+          className={btn(canPrevious)}
+        >
+          <ChevronsLeft className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => table.previousPage()}
+          disabled={!canPrevious}
+          title="Previous Page"
+          className={btn(canPrevious)}
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-slate-700 text-xs font-medium px-1 whitespace-nowrap">
+          Page {pageIndex + 1} of {pageCount}
+        </span>
+        <button
+          type="button"
+          onClick={() => table.nextPage()}
+          disabled={!canNext}
+          title="Next Page"
+          className={btn(canNext)}
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => table.setPageIndex(pageCount - 1)}
+          disabled={!canNext}
+          title="Last Page"
+          className={btn(canNext)}
+        >
+          <ChevronsRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     );
   };
@@ -562,7 +688,10 @@ function TableView<T extends object>({
   const visibleRows = table.getRowModel().rows;
 
   return (
-    <div className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div
+      className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+    >
       {/* Top pagination bar — header grey, only when pages exist. */}
       {isPageSizeReached && pageCount > 1 && (
         <div className="bg-slate-100 border-b border-slate-300 px-4 py-1.5 flex items-center justify-end">
@@ -570,21 +699,41 @@ function TableView<T extends object>({
         </div>
       )}
       <div className="overflow-x-auto custom-scrollbar">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
-          <table className="w-full border-collapse table-fixed text-left" style={{ minWidth }}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+        >
+          <table
+            className="w-full border-collapse table-fixed text-left"
+            style={{ minWidth }}
+          >
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="bg-slate-100 border-b border-slate-300 text-[11px] leading-tight text-slate-700 select-none">
+                <tr
+                  key={headerGroup.id}
+                  className="bg-slate-100 border-b border-slate-300 text-[11px] leading-tight text-slate-700 select-none"
+                >
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} style={{ width: header.getSize() }} className="relative py-2.5 px-3 font-semibold align-middle whitespace-nowrap overflow-visible">
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    <th
+                      key={header.id}
+                      style={{ width: header.getSize() }}
+                      className="relative py-2.5 px-3 font-semibold align-middle whitespace-nowrap overflow-visible"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
                         onDoubleClick={() => header.column.resetSize()}
                         title="Resize column"
                         className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none hover:bg-sky-400 ${
-                          header.column.getIsResizing() ? 'bg-sky-500' : ''
+                          header.column.getIsResizing() ? "bg-sky-500" : ""
                         }`}
                       />
                     </th>
@@ -596,14 +745,25 @@ function TableView<T extends object>({
             <tbody>
               {visibleRows.length === 0 ? (
                 <tr>
-                  <td colSpan={tableColumns.length} className="py-8 text-center text-xs text-slate-400">
+                  <td
+                    colSpan={tableColumns.length}
+                    className="py-8 text-center text-xs text-slate-400"
+                  >
                     {emptyText}
                   </td>
                 </tr>
               ) : onReorder ? (
-                <SortableContext items={visibleRows.map((d) => resolveIdRef.current(d.original))} strategy={verticalListSortingStrategy}>
+                <SortableContext
+                  items={visibleRows.map((d) =>
+                    resolveIdRef.current(d.original),
+                  )}
+                  strategy={verticalListSortingStrategy}
+                >
                   {visibleRows.map((row) => (
-                    <DraggableRow key={resolveIdRef.current(row.original)} row={row} />
+                    <DraggableRow
+                      key={resolveIdRef.current(row.original)}
+                      row={row}
+                    />
                   ))}
                 </SortableContext>
               ) : (
@@ -611,11 +771,17 @@ function TableView<T extends object>({
                   <tr
                     key={resolveIdRef.current(row.original)}
                     className="group transition-colors duration-150 border-b border-slate-200 bg-white hover:bg-slate-50/80"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                    style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="py-0 px-1.5 text-xs text-slate-700 align-middle">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      <td
+                        key={cell.id}
+                        className="py-0 px-1.5 text-xs text-slate-700 align-middle"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -632,13 +798,19 @@ function TableView<T extends object>({
                     <td
                       key={col.key}
                       className={`border-0 py-2.5 px-1.5 tabular-nums ${
-                        col.align === 'left' ? 'text-left' : col.align === 'center' ? 'text-center' : 'text-right'
+                        col.align === "left"
+                          ? "text-left"
+                          : col.align === "center"
+                            ? "text-center"
+                            : "text-right"
                       }`}
                     >
                       <div className="px-2">{col.footer?.(rows)}</div>
                     </td>
                   ))}
-                  {removable && <td className="border-0 py-2.5 px-2 text-center"></td>}
+                  {removable && (
+                    <td className="border-0 py-2.5 px-2 text-center"></td>
+                  )}
                 </tr>
               </tfoot>
             )}
@@ -654,8 +826,12 @@ function TableView<T extends object>({
           disabled={isCreating}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-800 hover:bg-sky-50 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50"
         >
-          {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-          {isCreating ? 'Adding…' : 'Add line'}
+          {isCreating ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Plus className="w-3.5 h-3.5" />
+          )}
+          {isCreating ? "Adding…" : "Add line"}
         </button>
       </div>
 
@@ -689,7 +865,8 @@ export function StaticDataTable<T extends object>({
   emptyText,
   minWidth,
 }: StaticDataTableProps<T>) {
-  const resolveId = getRowId ?? ((row: T) => String((row as { id: string }).id));
+  const resolveId =
+    getRowId ?? ((row: T) => String((row as { id: string }).id));
 
   // Mirror rows in a ref so stable column defs always operate on fresh data
   // without re-creating (and re-rendering) the whole table per keystroke.
@@ -697,7 +874,11 @@ export function StaticDataTable<T extends object>({
   dataRef.current = data;
 
   const updateRow = (_key: string, globalIndex: number, patch: Partial<T>) => {
-    onChange(dataRef.current.map((row, i) => (i === globalIndex ? { ...row, ...patch } : row)));
+    onChange(
+      dataRef.current.map((row, i) =>
+        i === globalIndex ? { ...row, ...patch } : row,
+      ),
+    );
   };
 
   const insertRow = () => {
@@ -756,7 +937,7 @@ function CollectionDataTableInner<T extends object>({
   createRow,
   where,
   orderBy,
-  orderDirection = 'asc',
+  orderDirection = "asc",
   limit,
   pageSize,
   onPageSizeChange,
@@ -768,7 +949,9 @@ function CollectionDataTableInner<T extends object>({
 }: CollectionDataTableProps<T>) {
   // Ensure on-demand (query) collections start syncing on mount.
   useEffect(() => {
-    (collection as unknown as { preload?: () => Promise<unknown> })?.preload?.().catch(() => {});
+    (collection as unknown as { preload?: () => Promise<unknown> })
+      ?.preload?.()
+      .catch(() => {});
   }, [collection]);
 
   // Live rows of the passed collection, with caller-supplied filters
@@ -809,14 +992,19 @@ function CollectionDataTableInner<T extends object>({
       if (Object.keys(patch).length === 0) return;
       markBusy(key, true);
       try {
-        const tx = (collection as unknown as {
-          update: (k: unknown, fn: (draft: Record<string, unknown>) => void) => unknown;
-        }).update(key, (draft) => {
+        const tx = (
+          collection as unknown as {
+            update: (
+              k: unknown,
+              fn: (draft: Record<string, unknown>) => void,
+            ) => unknown;
+          }
+        ).update(key, (draft) => {
           Object.assign(draft, patch);
         });
         await waitForPersist(tx);
       } catch (err) {
-        console.error('Table update failed:', err);
+        console.error("Table update failed:", err);
       } finally {
         markBusy(key, false);
       }
@@ -828,10 +1016,12 @@ function CollectionDataTableInner<T extends object>({
   const insertRow = useCallback(async () => {
     setIsCreating(true);
     try {
-      const tx = (collection as unknown as { insert: (item: unknown) => unknown }).insert(createRow());
+      const tx = (
+        collection as unknown as { insert: (item: unknown) => unknown }
+      ).insert(createRow());
       await waitForPersist(tx);
     } catch (err) {
-      console.error('Table create failed:', err);
+      console.error("Table create failed:", err);
     } finally {
       setIsCreating(false);
     }
@@ -851,10 +1041,12 @@ function CollectionDataTableInner<T extends object>({
     async (key: string) => {
       markBusy(key, true);
       try {
-        const tx = (collection as unknown as { delete: (k: unknown) => unknown }).delete(key);
+        const tx = (
+          collection as unknown as { delete: (k: unknown) => unknown }
+        ).delete(key);
         await waitForPersist(tx);
       } catch (err) {
-        console.error('Table delete failed:', err);
+        console.error("Table delete failed:", err);
       } finally {
         markBusy(key, false);
       }
@@ -892,10 +1084,10 @@ function CollectionTableFallback({ emptyText }: { emptyText?: string }) {
   return (
     <div
       className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden px-4 py-8 text-center text-xs text-slate-400"
-      style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
     >
       <Loader2 className="w-4 h-4 animate-spin inline-block mr-2 text-slate-400" />
-      {emptyText ?? 'Loading rows…'}
+      {emptyText ?? "Loading rows…"}
     </div>
   );
 }
@@ -905,7 +1097,7 @@ function CollectionTableFallback({ emptyText }: { emptyText?: string }) {
 // ==========================================
 
 export function DataTable<T extends object>(props: DataTableProps<T>) {
-  if ('collection' in props && props.collection) {
+  if ("collection" in props && props.collection) {
     const { pageSize } = props;
     void pageSize;
     return (

@@ -46,6 +46,11 @@ function AutocompleteInner<T extends object>({
   const inputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
   const revertOnCloseRef = useRef(false);
+  // Set on every explicit commit (click / Enter / Tab / outside-click).
+  // The deferred blur-commit must not re-fire afterwards with stale state —
+  // that second onChange could overwrite the just-picked value (or clear it).
+  // Cleared as soon as the user edits the text again.
+  const committedDisplayRef = useRef<string | null>(null);
 
   const { data } = useLiveQuery((q: InitialQueryBuilder) =>
     q.from({ c: collection }).select(({ c }) => c),
@@ -146,11 +151,18 @@ function AutocompleteInner<T extends object>({
 
   const commitSelection = (item: T) => {
     revertOnCloseRef.current = false;
+    const display = formatDisplayFields(item, displayFields);
+    committedDisplayRef.current = display;
     onChange(getKey(item), item);
-    setInputValue(formatDisplayFields(item, displayFields));
+    setInputValue(display);
     setIsOpen(false);
     inputRef.current?.blur();
   };
+
+  /** True when the textbox still shows freshly-committed text (nothing edited since). */
+  const hasUnconsumedCommit = () =>
+    committedDisplayRef.current != null &&
+    inputRef.current?.value === committedDisplayRef.current;
 
   /** Default to the first match when the user typed ≥1 char but never picked. */
   const commitDefault = () => {
@@ -195,7 +207,14 @@ function AutocompleteInner<T extends object>({
       if (focusedRef.current) return;
       if (revertOnCloseRef.current) {
         revertOnCloseRef.current = false;
+        committedDisplayRef.current = null;
         setInputValue(selectedDisplay);
+        setIsOpen(false);
+        return;
+      }
+      // An explicit commit already persisted this text — never re-fire
+      // onChange with stale highlight/filter state.
+      if (hasUnconsumedCommit()) {
         setIsOpen(false);
         return;
       }
@@ -244,7 +263,7 @@ function AutocompleteInner<T extends object>({
     <Popover.Root
       open={isOpen && !disabled}
       onOpenChange={(open) => {
-        if (!open && focusedRef.current) {
+        if (!open && focusedRef.current && !hasUnconsumedCommit()) {
           // Radix may close on outside pointer-down before blur fires.
           commitDefault();
         }
@@ -275,6 +294,7 @@ function AutocompleteInner<T extends object>({
                 onChange={(e) => {
                   setInputValue(e.target.value);
                   revertOnCloseRef.current = false;
+                  committedDisplayRef.current = null;
                   setIsOpen(true);
                   setHighlightedIndex(0);
                 }}
