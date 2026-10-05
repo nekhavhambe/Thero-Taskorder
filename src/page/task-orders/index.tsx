@@ -23,6 +23,7 @@ import type { TaskOrderLineDraft } from "../../collections/task-order-lines";
 import { useCollectionItems } from "../../collections/helpers";
 import type { StandardTask } from "../../collections/standard-tasks";
 import { standardTaskCollection } from "../../collections/standard-tasks";
+import { useParams } from "../../hook/params";
 
 export interface TaskOrderConfig {
   id?: string;
@@ -117,6 +118,10 @@ const sameDraft = (  a: TaskOrderLineDraft,
 
 export const TaskOrders = () => {
   const { register, control } = useFormContext<TaskOrderConfig>();
+  const { page } = useParams();
+  // ?page=new → header-fields-only mode: hide the lines table + totals so
+  // the user just captures the task order information.
+  const isNewPage = page === "new";
   const drafts = useCollectionItems<TaskOrderLineDraft>( taskOrderLineDraftCollection);
 
   const [pageSize, setPageSize] = useState(10);
@@ -328,23 +333,25 @@ export const TaskOrders = () => {
           <TextInput id="purchase-order" {...register("order")} />
         </Field>
       </div>
-      <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
-        <DataTable<TaskOrderLineDraft>
-          data={drafts}
-          onChange={handleDraftsChange}
-          columns={columns}
-          createRow={createDraftRow}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          reorderable={false}
-          minWidth={980}
-        />
-        <TotalsSummary
-          untaxed={untaxed}
-          taxRate={0.15}
-          currencySymbol={currency.symbol}
-        />
-      </div>
+      {!isNewPage && (
+        <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
+          <DataTable<TaskOrderLineDraft>
+            data={drafts}
+            onChange={handleDraftsChange}
+            columns={columns}
+            createRow={createDraftRow}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            reorderable={false}
+            minWidth={980}
+          />
+          <TotalsSummary
+            untaxed={untaxed}
+            taxRate={0.15}
+            currencySymbol={currency.symbol}
+          />
+        </div>
+      )}
     </>
   );
 };

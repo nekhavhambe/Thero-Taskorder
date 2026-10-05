@@ -55,6 +55,9 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  // ?page=new → header-fields-only mode: hide status pill, action buttons,
+  // and (in the page) the lines table, so the user just captures the order.
+  const isNewPage = params.page === "new";
 
   useEffect(() => {
     if (location.pathname.startsWith("/form")) setActiveTab("sales-order");
@@ -175,7 +178,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       </header>
       <div className="pt-1 pb-4 rounded-md mt-2 grid grid-cols-[70%_40%]">
         <div>
-          <Toolbar aside={<StatusChip status={status} />}>
+          <Toolbar aside={isNewPage ? undefined : <StatusChip status={status} />}>
             <ToolbarButton
               variant="blue"
               loading={!!pending.new}
@@ -199,40 +202,46 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
             >
               New
             </ToolbarButton>
-            <ToolbarButton
-              variant="blue"
-              loading={!!pending.generate}
-              onClick={() => runToolbarAction("generate")}
-            >
-              Generate Sales Order
-            </ToolbarButton>
-            <ToolbarButton
-              variant="grey"
-              loading={!!pending.issue}
-              onClick={() => runToolbarAction("issue")}
-            >
-              Issue Requisition
-            </ToolbarButton>
-            <ToolbarButton
-              variant="grey"
-              loading={!!pending.allocate}
-              onClick={() =>
-                runLocalAction("allocate", () => navigate("/task-order"))
-              }
-            >
-              Allocate Tasks
-            </ToolbarButton>
-            <ToolbarButton
-              variant="grey"
-              loading={!!pending.budget}
-              onClick={() =>
-                runLocalAction("budget", () =>
-                  setStatus((prev) => (prev === "under" ? "over" : "under")),
-                )
-              }
-            >
-              Update Budget
-            </ToolbarButton>
+            {isNewPage ? null : (
+              <>
+                <ToolbarButton
+                  variant="blue"
+                  loading={!!pending.generate}
+                  onClick={() => runToolbarAction("generate")}
+                >
+                  Generate Sales Order
+                </ToolbarButton>
+                <ToolbarButton
+                  variant="grey"
+                  loading={!!pending.issue}
+                  onClick={() => runToolbarAction("issue")}
+                >
+                  Issue Requisition
+                </ToolbarButton>
+                <ToolbarButton
+                  variant="grey"
+                  loading={!!pending.allocate}
+                  onClick={() =>
+                    runLocalAction("allocate", () => navigate("/task-order"))
+                  }
+                >
+                  Allocate Tasks
+                </ToolbarButton>
+                <ToolbarButton
+                  variant="grey"
+                  loading={!!pending.budget}
+                  onClick={() =>
+                    runLocalAction("budget", () =>
+                      setStatus((prev) =>
+                        prev === "under" ? "over" : "under",
+                      ),
+                    )
+                  }
+                >
+                  Update Budget
+                </ToolbarButton>
+              </>
+            )}
           </Toolbar>
           <Container>{children ?? <Outlet />}</Container>
         </div>

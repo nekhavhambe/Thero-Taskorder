@@ -3,6 +3,7 @@ import { useMemo, useSyncExternalStore } from "react";
 export interface PageParams {
   id: string;
   name: string;
+  page: string;
   projectId: string;
   projectName: string;
   projectKey: string;
