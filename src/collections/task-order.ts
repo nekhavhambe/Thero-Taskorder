@@ -9,8 +9,13 @@ import { update as updateTaskOrder } from '../services/intacct/action/taskorder'
 export const TASKORDER_BUDGET_OBJECT = "taskorder_budget";
 
 export interface TaskOrder extends CreateTaskOrderData {
-  id: string;
-  recordNo?: string;
+ ID: string; 
+ NAME: string; 
+ TASK_DESCRIPTION: string; 
+ START_DATE: string; 
+ END_DATE: string;
+ PURCHASE_ORDER: string; 
+ RPROJECT: string;
 }
 
 export const client = new QueryClient();
