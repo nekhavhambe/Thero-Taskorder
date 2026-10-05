@@ -8,8 +8,8 @@ import { Tasks } from "./page";
 import { toIsoDateParam } from "./hook/params";
 import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
-import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import { taskOrderCollection } from "./collections";
+import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
+import { projectCollection, taskOrderCollection } from "./collections";
 
 export interface TaskOrderConfig {
   id?: string;
@@ -23,9 +23,9 @@ function App() {
   const { data }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      // .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
-      //   eq(TaskOrders.RPROJECT, Project.RECORDNO),
-      // )
+      .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
+        eq(TaskOrders.RPROJECT, Project.RECORDNO),
+      )
       // .where(({ TaskOrders }) => eq(TaskOrders.ID, id))
       // .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
       // .findOne(),
