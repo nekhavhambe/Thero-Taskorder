@@ -1,6 +1,7 @@
 import { connect, WindowMessenger } from 'penpal';
 import { intacct } from '../services/intacct';
 import { describeIntacctBody } from '../services/intacct/utils/debug';
+import { submitTaskOrderForm } from '../services/intacct/action/taskorder';
 import { session } from '../services/intacct/utils/session';
 
 export interface ParentBridgeHandle {
@@ -27,6 +28,17 @@ export function initParentBridge(iframeId = 'intacct'): ParentBridgeHandle {
           return { text, status: status ?? null };
         } catch (err) {
           alert(`[parent] FAILED: ${(err as Error).message}`);
+          throw err;
+        }
+      },
+      async submitForm(params: { values: Record<string, string> }) {
+        alert('[parent] submitForm — fill + submit parent form');
+        try {
+          const text = await submitTaskOrderForm(params?.values ?? {});
+          alert(`[parent] submitForm done chars=${text.length}`);
+          return { text };
+        } catch (err) {
+          alert(`[parent] submitForm FAILED: ${(err as Error).message}`);
           throw err;
         }
       },

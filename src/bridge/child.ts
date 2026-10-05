@@ -1,5 +1,5 @@
 import { CallOptions, connect, WindowMessenger } from 'penpal';
-import type { Connection, Methods } from 'penpal';
+import type { Connection, Methods, RemoteProxy } from 'penpal';
 import type { IntacctFunctionResult } from '../services/intacct';
 import { hasSession } from '../services/intacct/utils/session';
 import { describeIntacctBody } from '../services/intacct/utils/debug';
@@ -7,6 +7,15 @@ import { describeIntacctBody } from '../services/intacct/utils/debug';
 /** Methods the parent page exposes to the iframed app. */
 export interface ParentBridgeApi extends Methods {
   request(fnBody: string): Promise<{ text: string; status: string | null }>;
+  /** Fill the parent page form with values and submit it there. */
+  submitForm(params: {
+    values: Record<string, string>;
+  }): Promise<{ text: string }>;
+}
+
+/** Resolves the connected parent API (handshakes first if needed). */
+export function getParentApi(): Promise<RemoteProxy<ParentBridgeApi>> {
+  return getConnection().promise;
 }
 
 let connection: Connection<ParentBridgeApi> | null = null;
