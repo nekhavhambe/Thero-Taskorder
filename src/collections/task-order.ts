@@ -13,7 +13,6 @@ export interface TaskOrder extends CreateTaskOrderData {
   recordNo?: string;
 }
 
-
 export const client = new QueryClient();
 export const taskOrderCollection = createCollection(
   queryCollectionOptions({
@@ -23,8 +22,8 @@ export const taskOrderCollection = createCollection(
       try {
         const { data } = await query({
           object: TASKORDER_BUDGET_OBJECT,
-          fields: ["RECORDNO","TASK_DESCRIPTION","PURCHASE_ORDER","START_DATE","END_DATE"],
-          orderBy: "RECORDNO",
+          fields: ["id","name","task_description","start_date","end_date"],
+          orderBy: "id",
         });
 
         alert(`[taskorder query] rows=${data.length}`);
