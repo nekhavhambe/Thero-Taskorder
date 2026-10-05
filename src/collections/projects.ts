@@ -24,7 +24,6 @@ export const projectCollection = createCollection(
     queryKey: ["projects"],
     queryFn: async () => {
       try {
-        alert('hi')
         const { data } = await query({
           object: "PROJECT",
           fields: ["RECORDNO","PROJECTID","NAME","CURRENCY","STATUS"],

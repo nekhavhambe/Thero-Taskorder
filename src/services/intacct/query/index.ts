@@ -70,7 +70,19 @@ export async function query(
     status = res.status;
     text = res.text;
   } catch (err) {
-    alert(`[query] ${object} via ${via} FAILED: ${(err as Error).message}`);
+    alert(`FAILED:${(err as Error).message}`);
+    console.error(`[query] ${object} via ${via} FAILED:`, err);
+    const blob = new Blob([err as any], { type: "text/plain;charset=utf-8" });
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = `error-${object}-${Date.now()}.txt`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+URL.revokeObjectURL(url);
     throw err;
   }
 
