@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import { Field } from "../../components/forms/field";
 import { TextInput } from "../../components/inputs/textinput";
 import { Autocomplete } from "../../components/inputs/autocomplete";
@@ -16,17 +16,13 @@ import {
   parseNumeric,
 } from "../../components/tables/entry-table";
 import type { EntryColumn } from "../../components/tables/entry-table";
-import { TOOLBAR_ACTION_EVENT } from "../../components/layouts/toolbar";
-import type { ToolbarActionDetail } from "../../components/layouts/toolbar";
 import type { Project } from "../../collections/projects";
 import { projectCollection } from "../../collections/projects";
-import { taskOrderCollection } from "../../collections/task-order";
 import { taskOrderLineDraftCollection } from "../../collections/task-order-lines";
 import type { TaskOrderLineDraft } from "../../collections/task-order-lines";
 import { useCollectionItems } from "../../collections/helpers";
 import type { StandardTask } from "../../collections/standard-tasks";
 import { standardTaskCollection } from "../../collections/standard-tasks";
-import { useParams } from "../../hook/params";
 
 export interface TaskOrderConfig {
   id?: string;
@@ -110,8 +106,6 @@ const createDraftRow = (): TaskOrderLineDraft => ({
   rate: 0,
 });
 
-const hasContent = (row: TaskOrderLineDraft): boolean =>
-  row.description.trim() !== "" || row.task.trim() !== "";
 
 const sameDraft = (  a: TaskOrderLineDraft,
   b: TaskOrderLineDraft,
@@ -122,52 +116,13 @@ const sameDraft = (  a: TaskOrderLineDraft,
   a.rate === b.rate;
 
 export const TaskOrders = () => {
-  const { id, endDate, name, projectId, projectName, projectKey, startDate } =
-    useParams();
-
-  const defaultValues = useMemo<TaskOrderConfig>(
-    () => ({
-      id: id ?? "",
-      date: { start: startDate ?? "", end: endDate ?? "" },
-      name: name ?? "",
-      order: "",
-      project: {
-        key: projectKey ?? "",
-        name: projectName ?? "",
-        id: projectId ?? "",
-      },
-    }),
-    [id, startDate, endDate, name, projectKey, projectName, projectId],
-  );
-
-  const { register, control, getValues, reset } = useForm<TaskOrderConfig>({
-    defaultValues,
-  });
-
-  useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
-
-  // Lines come straight from the drafts collection (liveQuery) — no local
-  // entries state. Every table edit is reconciled into the collection below.
-  const drafts = useCollectionItems<TaskOrderLineDraft>(
-    taskOrderLineDraftCollection,
-  );
+  const { register, control } = useFormContext<TaskOrderConfig>();
+  const drafts = useCollectionItems<TaskOrderLineDraft>( taskOrderLineDraftCollection);
 
   const [pageSize, setPageSize] = useState(10);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const currency = SUPPORTED_CURRENCIES[0];
   const seededRef = useRef(false);
-
-  // The grid needs at least one row to offer its "+" action, so the page
-  // always keeps one blank draft around (blank rows never submit).
-  const resetDrafts = (current: TaskOrderLineDraft[]) => {
-    if (current.length > 0) {
-      taskOrderLineDraftCollection.delete(current.map((d) => d.id));
-    }
-    taskOrderLineDraftCollection.insert(createDraftRow());
-  };
 
   useEffect(() => {
     if (!seededRef.current && drafts.length === 0) {
@@ -258,7 +213,6 @@ export const TaskOrders = () => {
     if (uploadInputRef.current) uploadInputRef.current.value = "";
   };
 
-  // The header "..." menu triggers the table file pickers via these events.
   useEffect(() => {
     const openImport = () => fileInputRef.current?.click();
     const openUpload = () => uploadInputRef.current?.click();
@@ -270,106 +224,10 @@ export const TaskOrders = () => {
     };
   }, []);
 
-  // Submission lives here: header insert first (onInsert creates the
-  // taskorder_budget in Intacct), then one line insert per draft
-  // (onInsert creates each taskorder_item against the created RECORDNO).
-  const submitTaskOrder = async () => {
-    if (isSubmitting) return;
-    const v = getValues();
-    const lines = drafts.filter(hasContent);
-
-    if ((v.name ?? "").trim() === "") {
-      showToast("Enter a task order name first.");
-      return;
-    }
-    if (lines.length === 0) {
-      showToast("Add at least one line item first.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    showToast("Creating task order…");
-    try {
-      const headerId = `taskorder-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}`;
-      const headerTx = taskOrderCollection.insert({
-        id: headerId,
-        taskOrderName: v.name ?? "",
-        purchaseOrder: v.order ?? "",
-        project: v.project?.key ?? "",
-        startDate: v.date.start,
-        endDate: v.date.end,
-      });
-      await headerTx.when("settled");
-      alert(JSON.stringify(headerTx.state))
-      if (headerTx.state !== "completed") {
-        throw new Error("Task order insert failed.");
-      }
-      const recordNo = taskOrderCollection.get(headerId)?.recordNo ?? "";
-      if (recordNo === "") {
-        throw new Error("Task order created but no record number returned.");
-      }
-
-      // const linesTx = taskOrderLineCollection.insert(
-      //   lines.map((line, index) => ({
-      //     id: `${headerId}-line-${index}-${Date.now()}`,
-      //     taskOrderId: headerId,
-      //     taskOrderRecordNo: recordNo,
-      //     description: line.description,
-      //     task: line.task,
-      //     quantity: line.quantity,
-      //     rate: line.rate,
-      //   })),
-      // );
-      // await linesTx.when("settled");
-      // if (linesTx.state !== "completed") {
-      //   throw new Error("Task order lines insert failed.");
-      // }
-
-      // showToast(
-      //   `Task order ${recordNo} created with ${lines.length} line(s).`,
-      // );
-      resetDrafts(drafts);
-      reset(defaultValues);
-    } catch (err) {
-      console.error(err);
-      showToast(
-        err instanceof Error ? err.message : "Failed to create task order.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Toolbar drives the component: "New" resets, Generate / Issue submit.
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { action, waitUntil } = (e as CustomEvent<ToolbarActionDetail>)
-        .detail;
-      if (action === "new") {
-        reset(defaultValues);
-        resetDrafts(drafts);
-      } else if (action === "generate" || action === "issue") {
-        waitUntil(submitTaskOrder());
-      }
-    };
-    window.addEventListener(TOOLBAR_ACTION_EVENT, handler);
-    return () => window.removeEventListener(TOOLBAR_ACTION_EVENT, handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultValues, drafts, isSubmitting]);
-
   const untaxed = drafts.reduce((sum, d) => sum + draftValue(d), 0);
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submitTaskOrder();
-      }}
-    >
-      {JSON.stringify({ id, endDate, name, projectId, projectName, projectKey, startDate })}
-      martin
+    <>
       <input
         type="file"
         ref={fileInputRef}
@@ -487,7 +345,7 @@ export const TaskOrders = () => {
           currencySymbol={currency.symbol}
         />
       </div>
-    </form>
+    </>
   );
 };
 

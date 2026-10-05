@@ -1,13 +1,24 @@
-import { useEffect, useState } from 'react';
-import type { FC, ReactNode } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import * as Popover from '@radix-ui/react-popover';
-import { Import, MoreHorizontal, Paperclip } from 'lucide-react';
-import { StatusChip, Toolbar, ToolbarButton, fireToolbarAction } from '../toolbar';
-import type { ToolbarAction } from '../toolbar';
-import { requestTableImport, requestTableUpload } from '../../tables/entry-table';
-import Container from '../container';
-import { useParams } from '../../../hook/params';
+import { useEffect, useState } from "react";
+import type { FC, ReactNode } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import * as Popover from "@radix-ui/react-popover";
+import { Import, MoreHorizontal, Paperclip } from "lucide-react";
+import {
+  StatusChip,
+  Toolbar,
+  ToolbarButton,
+  fireToolbarAction,
+} from "../toolbar";
+import type { ToolbarAction } from "../toolbar";
+import {
+  requestTableImport,
+  requestTableUpload,
+} from "../../tables/entry-table";
+import Container from "../container";
+import { useParams } from "../../../hook/params";
+import { useFormContext } from "react-hook-form";
+import type { TaskOrderConfig } from "../../../App";
+import { taskOrderCollection } from "../../../collections";
 
 interface HeaderTab {
   id: string;
@@ -18,24 +29,27 @@ interface HeaderTab {
 }
 
 const TABS: HeaderTab[] = [
-  { id: 'task-order', label: 'Task Order', badge: '1', to: '/task-order' },
-  { id: 'sales-order', label: 'Sales Order', badge: '1', to: '/form' },
-  { id: 'requisitions', label: 'Requisitions', badge: '1', to: '/requisitions' },
-  { id: 'cashflow', label: 'Cashflow', badge: '1', to: '/cashflow' },
-  { id: 'tasks', label: 'Tasks', badge: '1', to: '/tasks' },
-  { id: 'estimates', label: 'Estimates', badge: '1' },
-  { id: 'related', label: 'Related', badge: '1' },
+  { id: "task-order", label: "Task Order", badge: "1", to: "/task-order" },
+  { id: "sales-order", label: "Sales Order", badge: "1", to: "/form" },
+  {
+    id: "requisitions",
+    label: "Requisitions",
+    badge: "1",
+    to: "/requisitions",
+  },
+  { id: "cashflow", label: "Cashflow", badge: "1", to: "/cashflow" },
+  { id: "tasks", label: "Tasks", badge: "1", to: "/tasks" },
+  { id: "estimates", label: "Estimates", badge: "1" },
+  { id: "related", label: "Related", badge: "1" },
 ];
 
 export interface LayoutProps {
   children?: ReactNode;
 }
 
-
 export const Layout: FC<LayoutProps> = ({ children }) => {
-
-  const [activeTab, setActiveTab] = useState('task-order');
-  const [status, setStatus] = useState<'under' | 'over'>('under');
+  const [activeTab, setActiveTab] = useState("task-order");
+  const [status, setStatus] = useState<"under" | "over">("under");
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -43,11 +57,14 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   const params = useParams();
 
   useEffect(() => {
-    if (location.pathname.startsWith('/form')) setActiveTab('sales-order');
-    else if (location.pathname.startsWith('/task-order')) setActiveTab('task-order');
-    else if (location.pathname.startsWith('/requisitions')) setActiveTab('requisitions');
-    else if (location.pathname.startsWith('/cashflow')) setActiveTab('cashflow');
-    else if (location.pathname.startsWith('/tasks')) setActiveTab('tasks');
+    if (location.pathname.startsWith("/form")) setActiveTab("sales-order");
+    else if (location.pathname.startsWith("/task-order"))
+      setActiveTab("task-order");
+    else if (location.pathname.startsWith("/requisitions"))
+      setActiveTab("requisitions");
+    else if (location.pathname.startsWith("/cashflow"))
+      setActiveTab("cashflow");
+    else if (location.pathname.startsWith("/tasks")) setActiveTab("tasks");
   }, [location.pathname]);
 
   const handleTabClick = (tab: HeaderTab) => {
@@ -71,6 +88,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       setBusy(key, false);
     }
   };
+  const { getValues } = useFormContext<TaskOrderConfig>();
 
   return (
     <div>
@@ -78,7 +96,9 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         <div className="flex items-center gap-2">
           <div className="leading-tight">
             <div className="text-[11px] text-[#008784]">Taskorder</div>
-            <div className="text-sm font-bold text-slate-900">{params.name || 'New Task Order'}</div>
+            <div className="text-sm font-bold text-slate-900">
+              {params.name || "New Task Order"}
+            </div>
           </div>
           <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
             <Popover.Trigger asChild>
@@ -95,7 +115,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
               <Popover.Content
                 sideOffset={4}
                 align="start"
-                className="z-50 min-w-[180px] bg-white border border-slate-200 rounded shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
+                className="z-50 min-w-45 bg-white border border-slate-200 rounded shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
               >
                 <button
                   type="button"
@@ -135,7 +155,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
                 type="button"
                 onClick={() => handleTabClick(tab)}
                 className={`flex items-start px-3 py-1 bg-white border-r border-slate-200 last:border-r-0 transition-colors ${
-                  active ? 'bg-slate-100' : 'hover:bg-slate-50'
+                  active ? "bg-slate-100" : "hover:bg-slate-50"
                 }`}
               >
                 <span className="leading-tight text-left">
@@ -154,34 +174,68 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         </nav>
       </header>
       <div className="pt-1 pb-4 rounded-md mt-2 grid grid-cols-[70%_40%]">
-    <div>
-      <Toolbar
-        aside={
-          <StatusChip status={status} />
-        }
-      >
-        <ToolbarButton variant="blue" loading={!!pending.new} onClick={() => runToolbarAction('new')}>
-          New
-        </ToolbarButton>
-        <ToolbarButton variant="blue" loading={!!pending.generate} onClick={() => runToolbarAction('generate')}>
-          Generate Sales Order
-        </ToolbarButton>
-        <ToolbarButton variant="grey" loading={!!pending.issue} onClick={() => runToolbarAction('issue')}>
-          Issue Requisition
-        </ToolbarButton>
-        <ToolbarButton variant="grey" loading={!!pending.allocate} onClick={() => runLocalAction('allocate', () => navigate('/task-order'))}>
-          Allocate Tasks
-        </ToolbarButton>
-        <ToolbarButton
-          variant="grey"
-          loading={!!pending.budget}
-          onClick={() => runLocalAction('budget', () => setStatus((prev) => (prev === 'under' ? 'over' : 'under')))}
-        >
-          Update Budget
-        </ToolbarButton>
-      </Toolbar>
-      <Container>{children ?? <Outlet />}</Container>
-      </div>
+        <div>
+          <Toolbar aside={<StatusChip status={status} />}>
+            <ToolbarButton
+              variant="blue"
+              loading={!!pending.new}
+              onClick={async () => {
+                const v = getValues();
+                 alert(JSON.stringify(v));
+                const headerTx = taskOrderCollection.insert({
+                  id: `taskorder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  taskOrderName: v.name ?? "",
+                  purchaseOrder: v.order ?? "",
+                  project: v.project?.key ?? "",
+                  startDate: v.date.start,
+                  endDate: v.date.end,
+                });
+                await headerTx.when("settled");
+                alert(JSON.stringify(headerTx.state));
+                if (headerTx.state !== "completed") {
+                  throw new Error("Task order insert failed.");
+                }
+              }}
+            >
+              New
+            </ToolbarButton>
+            <ToolbarButton
+              variant="blue"
+              loading={!!pending.generate}
+              onClick={() => runToolbarAction("generate")}
+            >
+              Generate Sales Order
+            </ToolbarButton>
+            <ToolbarButton
+              variant="grey"
+              loading={!!pending.issue}
+              onClick={() => runToolbarAction("issue")}
+            >
+              Issue Requisition
+            </ToolbarButton>
+            <ToolbarButton
+              variant="grey"
+              loading={!!pending.allocate}
+              onClick={() =>
+                runLocalAction("allocate", () => navigate("/task-order"))
+              }
+            >
+              Allocate Tasks
+            </ToolbarButton>
+            <ToolbarButton
+              variant="grey"
+              loading={!!pending.budget}
+              onClick={() =>
+                runLocalAction("budget", () =>
+                  setStatus((prev) => (prev === "under" ? "over" : "under")),
+                )
+              }
+            >
+              Update Budget
+            </ToolbarButton>
+          </Toolbar>
+          <Container>{children ?? <Outlet />}</Container>
+        </div>
       </div>
     </div>
   );

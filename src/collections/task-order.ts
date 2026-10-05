@@ -17,6 +17,7 @@ export const taskOrderCollection = createCollection(
       await Promise.all(
         transaction.mutations.map(async (mutation) => {
           const row = mutation.modified;
+          alert("started")
           const text = await createTaskOrder({
             taskOrderName: row.taskOrderName,
             purchaseOrder: row.purchaseOrder,
