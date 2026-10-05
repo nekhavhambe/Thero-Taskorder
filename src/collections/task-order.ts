@@ -14,8 +14,10 @@ export interface TaskOrder extends CreateTaskOrderData {
  TASK_DESCRIPTION: string; 
  START_DATE: string; 
  END_DATE: string;
- PURCHASE_ORDER: string; 
- RPROJECT: string;
+  PURCHASE_ORDER: string; 
+  /** May be absent when the budget isn't linked to a project — the left
+      join then keeps the row with `Project` undefined. */
+  RPROJECT?: string;
 }
 
 export const client = new QueryClient();

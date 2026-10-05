@@ -5,7 +5,7 @@ import { SalesOrder } from "./page";
 import { Requisitions } from "./page";
 import { Cashflow } from "./page";
 import { Tasks } from "./page";
-import { toIsoDateParam } from "./hook/params";
+import { toIsoDateParam, useParams } from "./hook/params";
 import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
@@ -20,15 +20,16 @@ export interface TaskOrderConfig {
 }
 
 function App() {
+  const { id } = useParams();
   const { data }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
       .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
-        eq(TaskOrders.RPROJECT, Project.RECORDNO),
+        eq(TaskOrders?.RPROJECT ?? "", Project.RECORDNO),
       )
-      // .where(({ TaskOrders }) => eq(TaskOrders.ID, id))
-      // .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
-      // .findOne(),
+      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
+      .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
+      .findOne(),
   );
 
   const defaultValues = useMemo<TaskOrderConfig>(
@@ -55,7 +56,11 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      {JSON.stringify(data, null, 2)}
+      {JSON.stringify(
+        data.map((el:any) => el?.ID),
+        null,
+        2,
+      )}
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
