@@ -20,12 +20,9 @@ import { TOOLBAR_ACTION_EVENT } from "../../components/layouts/toolbar";
 import type { ToolbarActionDetail } from "../../components/layouts/toolbar";
 import type { Project } from "../../collections/projects";
 import { projectCollection } from "../../collections/projects";
-import {
-  taskOrderCollection,
-  taskOrderLineCollection,
-  taskOrderLineDraftCollection,
-} from "../../collections/taskorders";
-import type { TaskOrderLineDraft } from "../../collections/taskorders";
+import { taskOrderCollection } from "../../collections/task-order";
+import { taskOrderLineDraftCollection } from "../../collections/task-order-lines";
+import type { TaskOrderLineDraft } from "../../collections/task-order-lines";
 import { useCollectionItems } from "../../collections/helpers";
 import type { StandardTask } from "../../collections/standard-tasks";
 import { standardTaskCollection } from "../../collections/standard-tasks";
@@ -305,6 +302,7 @@ export const TaskOrders = () => {
         endDate: v.date.end,
       });
       await headerTx.when("settled");
+      alert(JSON.stringify(headerTx.state))
       if (headerTx.state !== "completed") {
         throw new Error("Task order insert failed.");
       }
@@ -313,25 +311,25 @@ export const TaskOrders = () => {
         throw new Error("Task order created but no record number returned.");
       }
 
-      const linesTx = taskOrderLineCollection.insert(
-        lines.map((line, index) => ({
-          id: `${headerId}-line-${index}-${Date.now()}`,
-          taskOrderId: headerId,
-          taskOrderRecordNo: recordNo,
-          description: line.description,
-          task: line.task,
-          quantity: line.quantity,
-          rate: line.rate,
-        })),
-      );
-      await linesTx.when("settled");
-      if (linesTx.state !== "completed") {
-        throw new Error("Task order lines insert failed.");
-      }
+      // const linesTx = taskOrderLineCollection.insert(
+      //   lines.map((line, index) => ({
+      //     id: `${headerId}-line-${index}-${Date.now()}`,
+      //     taskOrderId: headerId,
+      //     taskOrderRecordNo: recordNo,
+      //     description: line.description,
+      //     task: line.task,
+      //     quantity: line.quantity,
+      //     rate: line.rate,
+      //   })),
+      // );
+      // await linesTx.when("settled");
+      // if (linesTx.state !== "completed") {
+      //   throw new Error("Task order lines insert failed.");
+      // }
 
-      showToast(
-        `Task order ${recordNo} created with ${lines.length} line(s).`,
-      );
+      // showToast(
+      //   `Task order ${recordNo} created with ${lines.length} line(s).`,
+      // );
       resetDrafts(drafts);
       reset(defaultValues);
     } catch (err) {

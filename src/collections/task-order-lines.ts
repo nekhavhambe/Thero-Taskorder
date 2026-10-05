@@ -1,60 +1,9 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/react-db';
-import { XMLParser } from '../services/intacct/parser';
-import { create as createTaskOrder } from '../services/intacct/action/taskorder';
-import type { CreateTaskOrderData } from '../services/intacct/action/taskorder';
 import { create as createTaskOrderLine } from '../services/intacct/action/taskorder-lines';
-
-/** Pulls the created RECORDNO out of a raw Intacct response. */
-function parseRecordNo(text: string): string | undefined {
-  try {
-    const xml = new DOMParser().parseFromString(text, 'text/xml');
-    return XMLParser.field(xml, 'RECORDNO') || undefined;
-  } catch {
-    return undefined;
-  }
-}
+import { update as updateTaskOrderLine } from '../services/intacct/action/taskorder-lines';
 
 // ==========================================
-// TASKORDER (header)
-// ==========================================
-
-export interface TaskOrder extends CreateTaskOrderData {
-  /** Local key (storage + collection). */
-  id: string;
-  /** Created taskorder_budget RECORDNO — filled in after the insert settles. */
-  recordNo?: string;
-}
-
-export const taskOrderCollection = createCollection(
-  localStorageCollectionOptions<TaskOrder>({
-    id: 'task-orders',
-    storageKey: 'thero-task-orders',
-    getKey: (item) => item.id,
-    onInsert: async ({ transaction, collection }) => {
-      await Promise.all(
-        transaction.mutations.map(async (mutation) => {
-          const row = mutation.modified;
-          const text = await createTaskOrder({
-            taskOrderName: row.taskOrderName,
-            purchaseOrder: row.purchaseOrder,
-            project: row.project,
-            startDate: row.startDate,
-            endDate: row.endDate,
-          });
-          const recordNo = parseRecordNo(text);
-          if (recordNo) {
-            collection.update(mutation.key, (draft) => {
-              draft.recordNo = recordNo;
-            });
-          }
-        }),
-      );
-    },
-  }),
-);
-
-// ==========================================
-// TASKORDER LINE DRAFTS (editable table rows)
+// LINE DRAFTS (editable table rows)
 //
 // The lines grid reads/writes these directly — no local state.
 // They carry no Intacct sync: submitting a task order copies the
@@ -81,7 +30,7 @@ export const taskOrderLineDraftCollection = createCollection(
 );
 
 // ==========================================
-// TASKORDER LINE (submitted — Intacct synced)
+// SUBMITTED LINES (Intacct synced)
 // ==========================================
 
 export interface TaskOrderLine {
@@ -124,5 +73,33 @@ export const taskOrderLineCollection = createCollection(
         }),
       );
     },
+    onUpdate: async ({ transaction }) => {
+      await Promise.all(
+        transaction.mutations.map(async (mutation) => {
+          const row = mutation.modified;
+          // No Intacct record yet, or only the insert write-back filling in
+          // recordNo (synced fields unchanged) — nothing to push.
+          if (!row.recordNo || sameTaskOrderLineFields(mutation.original, row)) return;
+          await updateTaskOrderLine({
+            recordNo: row.recordNo,
+            Rtaskorder_budget: row.taskOrderRecordNo,
+            task: row.task,
+            taskorder_item: row.description,
+            quantity: row.quantity,
+            rate: row.rate,
+          });
+        }),
+      );
+    },
   }),
 );
+
+function sameTaskOrderLineFields(a: Partial<TaskOrderLine>, b: TaskOrderLine): boolean {
+  return (
+    (a.taskOrderRecordNo ?? '') === (b.taskOrderRecordNo ?? '') &&
+    (a.description ?? '') === (b.description ?? '') &&
+    (a.task ?? '') === (b.task ?? '') &&
+    (a.quantity ?? '') === (b.quantity ?? '') &&
+    (a.rate ?? '') === (b.rate ?? '')
+  );
+}

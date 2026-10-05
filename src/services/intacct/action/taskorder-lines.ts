@@ -47,3 +47,36 @@ export async function create( data: CreateTaskOrderLineData ): Promise<CreateTas
 
   return { status, text, recordNo: XMLParser.field(xml, "RECORDNO") || undefined };
 }
+
+export interface UpdateTaskOrderLineData extends CreateTaskOrderLineData {
+  /** Created taskorder_item RECORDNO — identifies the record to update. */
+  recordNo: string;
+}
+
+export interface UpdateTaskOrderLineResult {
+  status?: string;
+  text: string;
+}
+
+export async function update(data: UpdateTaskOrderLineData): Promise<UpdateTaskOrderLineResult> {
+  const { status, text } = await intacct(`
+      <function controlid="update_taskorder_line">
+        <update>
+          <taskorder_item key="${XMLParser.escapeXml(data.recordNo)}">
+            <taskorder_item>${XMLParser.escapeXml(str(data.taskorder_item))}</taskorder_item>
+            <task>${XMLParser.escapeXml(str(data.task))}</task>
+            <task_id>${XMLParser.escapeXml(str(data.task_id))}</task_id>
+            <item_id>${XMLParser.escapeXml(str(data.item_id))}</item_id>
+            <quantity>${XMLParser.escapeXml(num(data.quantity))}</quantity>
+            <rate>${XMLParser.escapeXml(num(data.rate))}</rate>
+            <Rtaskorder_budget>${XMLParser.escapeXml(str(data.Rtaskorder_budget))}</Rtaskorder_budget>
+          </taskorder_item>
+        </update>
+      </function>`);
+
+  if (status !== "success") {
+    throw new Error(`taskorder_item update failed: ${text.slice(0, 500)}`);
+  }
+
+  return { status, text };
+}

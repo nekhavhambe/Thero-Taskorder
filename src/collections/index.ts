@@ -21,7 +21,9 @@ export {
   BUDGET_ACTUAL_GROUPS,
 } from './budgetActuals';
 export type { FetchBudgetActualsOptions } from './budgetActuals';
-export { taskOrderCollection, taskOrderLineCollection, taskOrderLineDraftCollection } from './taskorders';
-export type { TaskOrder, TaskOrderLine, TaskOrderLineDraft } from './taskorders';
+export { taskOrderCollection } from './task-order';
+export type { TaskOrder } from './task-order';
+export { taskOrderLineCollection, taskOrderLineDraftCollection } from './task-order-lines';
+export type { TaskOrderLine, TaskOrderLineDraft } from './task-order-lines';
 export { formatDisplayFields, useCollectionItems } from './helpers';
 export type { AnyCollection } from './helpers';
