@@ -70,6 +70,9 @@ export interface InstalledBridgeChild {
  *
  * Call once at startup (e.g. in main.tsx).
  */
+/** Bump on every deploy so the iframe can prove which bundle it runs. */
+export const BUILD_ID = 'preload-fix-1';
+
 export function installBridgeChild(): InstalledBridgeChild | null {
   if (typeof window === 'undefined' || !isEmbedded()) {
     alert('[child] standalone page — direct Intacct');
@@ -79,7 +82,7 @@ export function installBridgeChild(): InstalledBridgeChild | null {
     alert('[child] embedded with own session — direct Intacct');
     return null; // Own session — no bridge needed.
   }
-  alert('[child] embedded without session — bridge mode');
+  alert(`[child] build=${BUILD_ID} embedded without session — bridge mode`);
 
   getConnection().promise.then(
     () => alert('[child] bridge CONNECTED to parent'),

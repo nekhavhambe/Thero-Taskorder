@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { Collection, InitialQueryBuilder } from '@tanstack/react-db';
 
@@ -29,6 +29,12 @@ export function formatDisplayFields<T extends object>(
 export function useCollectionItems<T extends object>(
   collection: AnyCollection | undefined
 ): T[] {
+  // Belt-and-suspenders: ensure an on-demand (query) collection actually
+  // starts syncing when first subscribed, even if its module-scope preload
+  // raced something at import time.
+  useEffect(() => {
+    collection?.preload().catch(() => {});
+  }, [collection]);
   const { data } = useLiveQuery((q: InitialQueryBuilder) =>
     collection ? q.from({ c: collection }).select(({ c }) => c) : undefined,
   );
