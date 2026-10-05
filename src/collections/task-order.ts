@@ -27,23 +27,13 @@ export const taskOrderCollection = createCollection(
         });
 
         alert(`[taskorder query] rows=${data.length}`);
-
         return (data || [])
-          .filter((row) => (row.RECORDNO ?? "").trim() !== "")
-          .map((row): TaskOrder => ({
-            id: row.RECORDNO.trim(),
-            recordNo: row.RECORDNO.trim(),
-            taskOrderName: row.TASK_DESCRIPTION ?? "",
-            purchaseOrder: row.PURCHASE_ORDER ?? "",
-            startDate: row.START_DATE ?? "",
-            endDate: row.END_DATE ?? "",
-          }));
       } catch {
         return [];
       }
     },
     queryClient: client,
-    getKey: (item) => item.recordNo?.trim() ? item.recordNo : item.id,
+    getKey: (item) => item.id,
     retry: false,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
