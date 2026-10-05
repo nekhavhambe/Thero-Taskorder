@@ -22,7 +22,7 @@ export const taskOrderCollection = createCollection(
       try {
         const { data } = await query({
           object: TASKORDER_BUDGET_OBJECT,
-          fields: ["id","name","task_description","start_date","end_date"],
+          fields: ["id","name","task_description","start_date","end_date", "purchase_order", "RPROJECT"],
           orderBy: "id",
         });
 
@@ -33,7 +33,7 @@ export const taskOrderCollection = createCollection(
       }
     },
     queryClient: client,
-    getKey: (item) => item.id,
+    getKey: (item) => item.ID,
     retry: false,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
