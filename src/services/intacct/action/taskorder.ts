@@ -13,7 +13,7 @@ export interface CreateTaskOrderData {
 export async function create(data: CreateTaskOrderData): Promise<string> {
   // intacct() routes through the parent bridge when this page has no session.
   const { text } = await intacct(`
-      <function controlid="controlid">
+      <function controlid="create">
         <create>
           <taskorder_budget>
              <task_description>${XMLParser.escapeXml(data.taskOrderName)}</task_description>

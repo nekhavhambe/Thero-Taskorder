@@ -85,17 +85,6 @@ export async function query(
   }
 
   if (status !== "success") {
-    alert(`[query] ${object} status=${status} FAILED: ${text}`);
-    const blob = new Blob([text as any], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `error-${object}-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
     throw new Error(`${object} query failed: ${text}`);
   }
 

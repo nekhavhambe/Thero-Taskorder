@@ -27,5 +27,14 @@ export async function intacct(body: string): Promise<IntacctFunctionResult> {
   const text = await response.text();
   const xml = new DOMParser().parseFromString(text, 'text/xml');
   const status = xml.querySelector('result > status')?.textContent ?? undefined;
+      const blob = new Blob([text as any], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `error--${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
   return { text, xml, status };
 }
