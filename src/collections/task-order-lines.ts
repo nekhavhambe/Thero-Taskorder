@@ -19,14 +19,13 @@ import { remove as removeTaskOrderLine } from "../services/intacct/action/taskor
 export const TASKORDER_ITEM_OBJECT = "taskorder_item";
 
 const TASKORDER_ITEM_FIELDS = [
-  "RECORDNO",
+  "id",
   "taskorder_item",
   "task",
-  "task_id",
-  "item_id",
   "quantity",
   "rate",
   "Rtaskorder_budget",
+  "name",
 ] as const;
 
 export interface TaskOrderLine {
@@ -53,8 +52,8 @@ export interface TaskOrderLine {
  * the live-query engine still enforces them client-side.
  */
 const INTACCT_FIELD_MAP: Record<string, string> = {
-  id: "RECORDNO",
-  recordNo: "RECORDNO",
+  id: "id",
+  recordNo: "id",
   description: "taskorder_item",
   task: "task",
   quantity: "quantity",
@@ -93,8 +92,8 @@ export const taskOrderLineCollection = createCollection(
         throw new Error(`Intacct query only sorts ascending, got: ${firstSort.direction}`);
       }
       const orderField = firstSort
-        ? (INTACCT_FIELD_MAP[firstSort.field.join(".")] ?? "RECORDNO")
-        : "RECORDNO";
+        ? (INTACCT_FIELD_MAP[firstSort.field.join(".")] ?? "id")
+        : "id";
 
       try {
         const { data } = await query({
@@ -135,6 +134,11 @@ export const taskOrderLineCollection = createCollection(
       await Promise.all(
         transaction.mutations.map(async (mutation) => {
           const row = mutation.modified;
+          // Blank entry row (Add-line) — `taskorder_item` is required by
+          // Intacct ("TaskOrder Item must be specified"), so keep the row
+          // local-only until it has content. The first meaningful update
+          // creates the Intacct record (see onUpdate below).
+          if (!lineHasContent(row)) return;
           const result = await createTaskOrderLine({
             Rtaskorder_budget: row.taskOrderRecordNo,
             task: row.task,
@@ -150,13 +154,31 @@ export const taskOrderLineCollection = createCollection(
         }),
       );
     },
-    onUpdate: async ({ transaction }) => {
+    onUpdate: async ({ transaction, collection }) => {
       await Promise.all(
         transaction.mutations.map(async (mutation) => {
           const row = mutation.modified;
-          // No Intacct record yet, or only the insert write-back filling in
-          // recordNo (synced fields unchanged) — nothing to push.
-          if (!row.recordNo || sameTaskOrderLineFields(mutation.original, row)) return;
+          if (!row.recordNo) {
+            // Local-only row (blank on insert) — create the Intacct record
+            // once it carries content, then write back the RECORDNO.
+            if (!lineHasContent(row)) return;
+            const result = await createTaskOrderLine({
+              Rtaskorder_budget: row.taskOrderRecordNo,
+              task: row.task,
+              taskorder_item: row.description,
+              quantity: row.quantity,
+              rate: row.rate,
+            });
+            if (result.recordNo) {
+              collection.update(mutation.key, (draft) => {
+                draft.recordNo = result.recordNo;
+              });
+            }
+            return;
+          }
+          // Only the insert write-back filling in recordNo (synced fields
+          // unchanged) — nothing to push.
+          if (sameTaskOrderLineFields(mutation.original, row)) return;
           await updateTaskOrderLine({
             recordNo: row.recordNo,
             Rtaskorder_budget: row.taskOrderRecordNo,
@@ -181,8 +203,18 @@ export const taskOrderLineCollection = createCollection(
   }),
 );
 
-function sameTaskOrderLineFields(a: Partial<TaskOrderLine>, b: TaskOrderLine): boolean {
-  return (
+/** A row carries submittable content (so Intacct accepts the create). */
+function lineHasContent(row: Pick<TaskOrderLine, "description" | "task" | "quantity" | "rate">): boolean {
+  if (String(row.description ?? "").trim() !== "") return true;
+  if (String(row.task ?? "").trim() !== "") return true;
+  const qty = typeof row.quantity === "number" ? row.quantity : Number(row.quantity);
+  const rate = typeof row.rate === "number" ? row.rate : Number(row.rate);
+  if (!Number.isNaN(qty) && qty !== 0) return true;
+  if (!Number.isNaN(rate) && rate !== 0) return true;
+  return false;
+}
+
+function sameTaskOrderLineFields(a: Partial<TaskOrderLine>, b: TaskOrderLine): boolean {  return (
     (a.taskOrderRecordNo ?? "") === (b.taskOrderRecordNo ?? "") &&
     (a.description ?? "") === (b.description ?? "") &&
     (a.task ?? "") === (b.task ?? "") &&
