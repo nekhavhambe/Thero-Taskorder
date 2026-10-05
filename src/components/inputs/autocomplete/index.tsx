@@ -2,7 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Check, ChevronDown, Plus, X } from 'lucide-react';
-import { formatDisplayFields, useCollectionItems } from '../../../collections/helpers';
+import { useLiveQuery } from '@tanstack/react-db';
+import type { InitialQueryBuilder } from '@tanstack/react-db';
+import { formatDisplayFields } from '../../../collections/helpers';
 import type { AnyCollection } from '../../../collections/helpers';
 
 export interface AutocompleteProps<T extends object = Record<string, unknown>> {
@@ -48,15 +50,33 @@ function AutocompleteInner<T extends object>({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const items = useCollectionItems<T>(collection);
+  const { data, isError, state } = useLiveQuery((q: InitialQueryBuilder) =>
+    q.from({ c: collection }).select(({ c }) => c),
+  );
+
+
+  alert(JSON.stringify({ data, isError, state }));
+  const items = useMemo(() => {
+    const rows = (data ?? []) as Array<
+      T | { row?: T | null } | undefined | null
+    >;
+    return rows.flatMap((r) => {
+      if (r == null) return [];
+      if (
+        typeof r === 'object' &&
+        'row' in r &&
+        (r as { row?: unknown }).row != null
+      ) {
+        return [(r as { row: T }).row];
+      }
+      return [r as T];
+    });
+  }, [data]);
+
+
   const selected = useMemo(() => {
     if (value == null || value === '') return null;
-    // Primary match on the submitted key (e.g. Intacct RECORDNO), with
-    // fallbacks to `id` / `recordNo` (and raw `TASKID` / `RECORDNO`) so
-    // legacy key values still resolve after the collection syncs RECORDNOs
-    // in — and to `name` / `NAME` so values stored as display names
-    // (e.g. rows created by the old select dropdown or imports)
-    // resolve to the fetched row.
+
     const needle = value.trim().toLowerCase();
     return (
       items.find((item) => getKey(item) === value) ??

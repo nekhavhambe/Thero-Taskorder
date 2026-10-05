@@ -1,4 +1,4 @@
-import { connect, WindowMessenger } from 'penpal';
+import { CallOptions, connect, WindowMessenger } from 'penpal';
 import type { Connection, Methods } from 'penpal';
 import type { IntacctFunctionResult } from '../services/intacct';
 import { hasSession } from '../services/intacct/utils/session';
@@ -40,7 +40,7 @@ export async function intacctViaBridge(body: string): Promise<IntacctFunctionRes
   alert(`[child>parent] ${describeIntacctBody(body)}`);
   try {
     const parent = await getConnection().promise;
-    const res = await parent.request(body);
+    const res = await parent.request(body, new CallOptions({ timeout: 15000 }));
     const text = res?.text ?? '';
     const xml = new DOMParser().parseFromString(text, 'text/xml');
     alert(`[child<parent] status=${res?.status ?? '?'} chars=${text.length}`);
@@ -51,6 +51,9 @@ export async function intacctViaBridge(body: string): Promise<IntacctFunctionRes
     };
   } catch (err) {
     alert(`[child>parent] FAILED: ${(err as Error).message}`);
+    // Drop the dead connection so the next call re-handshakes from scratch.
+    connection?.destroy();
+    connection = null;
     throw err;
   }
 }
