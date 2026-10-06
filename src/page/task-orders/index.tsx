@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Field } from "../../components/forms/field";
 import { TextInput } from "../../components/inputs/textinput";
@@ -11,6 +11,7 @@ import {
 import type { Project } from "../../collections/projects";
 import { projectCollection } from "../../collections/projects";
 import { useParams } from "../../hook/params";
+import { eq } from "@tanstack/react-db";
 
 export interface TaskOrderConfig {
   id?: string;
@@ -21,9 +22,15 @@ export interface TaskOrderConfig {
 }
 
 export const TaskOrders = () => {
-  const { register, control } = useFormContext<TaskOrderConfig>();
+  const { register, control, getValues } = useFormContext<TaskOrderConfig>();
   const { page } = useParams();
   const isNewPage = page === "new";
+  // Parent order id from the header form — scopes the lines grid below.
+  const taskOrderId = getValues("id") ?? "";
+  const linesWhere = useMemo(
+    () => ({ c }: any) => eq(c.taskOrderId, taskOrderId),
+    [taskOrderId],
+  );
   const [pageSize, setPageSize] = useState(10);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const currency = SUPPORTED_CURRENCIES[0];
@@ -137,6 +144,8 @@ export const TaskOrders = () => {
         <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
           <TaskOrderLinesTable
             currency={currency}
+            taskOrderId={taskOrderId}
+            where={linesWhere}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
             onImportSuccess={handleImportSuccess}
