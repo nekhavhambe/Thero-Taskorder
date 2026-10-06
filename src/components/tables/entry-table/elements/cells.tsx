@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { TextInput } from "../../../inputs/textinput";
-import type { AnyCollection } from "../../../../collections/helpers";
 
 // ==========================================
 // SHARED HELPERS
@@ -40,24 +39,6 @@ export function normalizeLiveRows<T>(liveData: unknown): T[] {
     }
     return [r as T];
   });
-}
-
-export function defaultResolveId<T>(
-  collection: AnyCollection | undefined,
-  row: T,
-): string {
-  if (collection) {
-    try {
-      const key = (
-        collection as unknown as { getKeyFromItem: (item: T) => unknown }
-      ).getKeyFromItem(row);
-      if (key !== undefined && key !== null && String(key) !== "")
-        return String(key);
-    } catch {
-      // fall through to row.id
-    }
-  }
-  return String((row as { id?: unknown }).id ?? "");
 }
 
 // ==========================================

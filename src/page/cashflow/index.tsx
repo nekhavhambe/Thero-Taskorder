@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FC } from 'react';
-import { CollectionDataTable } from '../../components/tables/entry-table';
+import { Table } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency, parseNumeric } from '../../components/tables/entry-table';
 import { cashflowCollection } from '../../collections/cashflow';
@@ -122,7 +122,6 @@ export const Cashflow: FC = () => {
   const rows = useCollectionItems<CashflowRow>(cashflowCollection);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
-  const [pageSize, setPageSize] = useState(10);
   const [budgeted, setBudgeted] = useState<number | null>(null);
   const [billed, setBilled] = useState<number | null>(null);
   const [spent, setSpent] = useState<number | null>(null);
@@ -184,15 +183,23 @@ export const Cashflow: FC = () => {
         </Field>
       </div>
       <div className="-mx-6 -mb-6 overflow-hidden [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-        <CollectionDataTable<CashflowRow>
-          collection={cashflowCollection}
-          columns={cashflowColumns}
-          createRow={() => createBlankCashflowRow(`${Date.now()}-${Math.random()}`)}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          reorderable={false}
-          showRowNumbers={false}
-          emptyText="No cashflow rows yet."
+        <Table<CashflowRow>
+          config={{
+            collection: cashflowCollection,
+            fn: {
+              create: () => createBlankCashflowRow(`${Date.now()}-${Math.random()}`),
+              update: ({ row, field, value }) =>
+                cashflowCollection.update(row.id, (draft) => {
+                  (draft as Record<string, unknown>)[field] = value;
+                }),
+              remove: ({ row }) => cashflowCollection.delete(row.id),
+            },
+            column: { columns: cashflowColumns },
+            row: {
+              emptyText: "No cashflow rows yet.",
+              enable: { numbers: false, reorderable: false },
+            },
+          }}
         />
       </div>
     </div>

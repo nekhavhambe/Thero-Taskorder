@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { FC } from 'react';
-import { CollectionDataTable } from '../../components/tables/entry-table';
+import { Table } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency } from '../../components/tables/entry-table';
 import {
@@ -115,8 +115,6 @@ const requisitionColumns: EntryColumn<PurchaseDocument>[] = [
 
 /** Requisitions tab — purchase requisition documents with Convert to PO. */
 export const Requisitions: FC = () => {
-  const [pageSize, setPageSize] = useState(10);
-
   useEffect(() => {
     void refreshPurchaseRequisitionDocuments().catch((err) =>
       console.warn('Requisition documents refresh skipped:', (err as Error).message),
@@ -125,17 +123,29 @@ export const Requisitions: FC = () => {
 
   return (
     <div className="-mx-6 -mb-6 -mt-6 overflow-hidden rounded [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-      <CollectionDataTable<PurchaseDocument>
-        collection={purchaseRequisitionDocumentsCollection}
-        columns={requisitionColumns}
-        getRowId={(row) => String(row.RECORDNO ?? '')}
-        createRow={() => ({}) as PurchaseDocument}
-        pageSize={pageSize}
-        onPageSizeChange={setPageSize}
-        reorderable={false}
-        removable={false}
-        showRowNumbers={false}
-        emptyText="No requisitions yet."
+      <Table<PurchaseDocument>
+        config={{
+          collection: purchaseRequisitionDocumentsCollection,
+          fn: {
+            create: () => ({}) as PurchaseDocument,
+            update: ({ row, field, value }) =>
+              purchaseRequisitionDocumentsCollection.update(
+                (row as unknown as { id: string }).id,
+                (draft) => {
+                  (draft as Record<string, unknown>)[field] = value;
+                },
+              ),
+            remove: ({ row }) =>
+              purchaseRequisitionDocumentsCollection.delete(
+                (row as unknown as { id: string }).id,
+              ),
+          },
+          column: { columns: requisitionColumns },
+          row: {
+            emptyText: "No requisitions yet.",
+            enable: { numbers: false, reorderable: false, removable: false },
+          },
+        }}
       />
     </div>
   );

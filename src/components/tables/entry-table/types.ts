@@ -1,15 +1,18 @@
 import type { ReactNode } from "react";
 import type { AnyCollection } from "../../../collections/helpers";
+import type { TableFn } from "./table";
 
 // ==========================================
 // COLUMN CONFIGURATION
 // ==========================================
 
-export interface CellContext<T> {
+export interface CellContext<T extends object> {
   row: T;
   globalIndex: number;
-  /** Persist the patch (collection mode awaits `update().when('settled')`). */
+  /** Persist the patch (routes through the caller's `fn.update`). */
   update: (patch: Partial<T>) => void | Promise<void>;
+  /** Caller hooks — custom cells persist via `fn` instead of the collection. */
+  fn: TableFn<T>;
 }
 
 export type EditorConfig =
@@ -47,35 +50,3 @@ export interface EntryColumn<T> {
   footer?: (rows: T[]) => ReactNode;
 }
 
-interface TableChromeProps {
-  columns: EntryColumn<any>[];
-  pageSize?: number;
-  reorderable?: boolean;
-  removable?: boolean;
-  showRowNumbers?: boolean;
-  emptyText?: string;
-  minWidth?: number;
-  onPageSizeChange?: (size: number) => void;
-  getRowId?: (row: any) => string;
-  createRow: () => any;
-}
-
-export interface CollectionDataTableProps<
-  T extends object,
-> extends TableChromeProps {
-  /** TanStack collection backing the grid — rows come from a live query on it. */
-  collection: AnyCollection;
-  columns: EntryColumn<T>[];
-  getRowId?: (row: T) => string;
-  createRow: () => T;
-  /**
-   * Live-query filter pushed into `useLiveSuspenseQuery`, e.g.
-   * `({ c }) => eq(c.taskOrderId, orderId)`.
-   * Re-runs reactively when captured values change.
-   */
-  where?: (aliases: any) => any;
-  /** Live-query sort, e.g. `({ c }) => c.createdAt`. */
-  orderBy?: (aliases: any) => any;
-  orderDirection?: "asc" | "desc";
-  limit?: number;
-}

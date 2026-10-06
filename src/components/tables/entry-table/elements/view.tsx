@@ -37,6 +37,7 @@ import { Autocomplete } from "../../../inputs/autocomplete";
 import { TextCell } from "./cells";
 import { DraggableRow } from "./draggable-row";
 import type { CellContext, EntryColumn } from "../types";
+import type { TableFn } from "../table";
 
 // ==========================================
 // STANDALONE TABLE VIEW (pure presentational grid)
@@ -45,6 +46,8 @@ import type { CellContext, EntryColumn } from "../types";
 export interface ViewProps<T extends object> {
   rows: T[];
   columns: EntryColumn<T>[];
+  /** Caller hooks, also exposed to custom cells via `CellContext.fn`. */
+  fn: TableFn<T>;
   resolveId: (row: T) => string;
   onUpdate: (
     key: string,
@@ -69,6 +72,7 @@ export interface ViewProps<T extends object> {
 export function View<T extends object>({
   rows,
   columns,
+  fn,
   resolveId,
   onUpdate,
   onInsert,
@@ -93,6 +97,8 @@ export function View<T extends object>({
   // Stable callbacks via ref so column defs never remount cells mid-type.
   const callbacksRef = useRef({ onUpdate, onInsertBelow, onDelete });
   callbacksRef.current = { onUpdate, onInsertBelow, onDelete };
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
   const resolveIdRef = useRef(resolveId);
   resolveIdRef.current = resolveId;
 
@@ -191,7 +197,9 @@ export function View<T extends object>({
           />
         );
       case "custom":
-        return <>{editor.render({ row, globalIndex, update } as CellContext<T>)}</>;
+        return (
+          <>{editor.render({ row, globalIndex, update, fn: fnRef.current } as CellContext<T>)}</>
+        );
       default:
         return null;
     }

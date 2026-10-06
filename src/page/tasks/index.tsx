@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import type { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { eq } from '@tanstack/react-db';
-import { CollectionDataTable } from '../../components/tables/entry-table';
-import type { EntryColumn } from '../../components/tables/entry-table';
+import { Table } from '../../components/tables/entry-table';
+import type { EntryColumn, TableFn, TableQuery } from '../../components/tables/entry-table';
 import { standardTaskCollection } from '../../collections/tasks';
 import type { StandardTask } from '../../collections/tasks';
 import type { TaskOrderConfig } from '../task-orders';
@@ -59,22 +59,37 @@ const taskColumns: EntryColumn<StandardTask>[] = [
 export const Tasks: FC = () => {
   const { getValues } = useFormContext<TaskOrderConfig>();
   const projectKey = String(getValues("project.key") ?? "").trim();
-  const [pageSize, setPageSize] = useState(10);
+  const fn = useMemo<TableFn<StandardTask>>(
+    () => ({
+      query: projectKey
+        ? (q: TableQuery) => q.where(({ c }: any) => eq(c.PROJECTKEY, projectKey))
+        : undefined,
+      create: () => ({}) as StandardTask,
+      update: ({ row, field, value }) =>
+        standardTaskCollection.update(
+          (row as unknown as { id: string }).id,
+          (draft) => {
+            (draft as Record<string, unknown>)[field] = value;
+          },
+        ),
+      remove: ({ row }) =>
+        standardTaskCollection.delete((row as unknown as { id: string }).id),
+    }),
+    [projectKey],
+  );
 
   return (
     <div className="-mx-6 -mb-6 -mt-6 overflow-hidden rounded [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-      <CollectionDataTable<StandardTask>
-        collection={standardTaskCollection}
-        columns={taskColumns}
-        getRowId={(row) => (row.RECORDNO?.trim() ? row.RECORDNO : row.STANDARDTASKID || row.NAME)}
-        createRow={() => ({}) as StandardTask}
-        where={projectKey ? ({ c }: any) => eq(c.PROJECTKEY, projectKey) : undefined}
-        pageSize={pageSize}
-        onPageSizeChange={setPageSize}
-        reorderable={false}
-        removable={false}
-        showRowNumbers={false}
-        emptyText={projectKey ? "No tasks for this project." : "No tasks yet."}
+      <Table<StandardTask>
+        config={{
+          collection: standardTaskCollection,
+          fn,
+          column: { columns: taskColumns },
+          row: {
+            emptyText: projectKey ? "No tasks for this project." : "No tasks yet.",
+            enable: { numbers: false, reorderable: false, removable: false },
+          },
+        }}
       />
     </div>
   );
