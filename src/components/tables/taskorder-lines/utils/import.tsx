@@ -53,7 +53,7 @@ export function useImport({ taskorder }: Options) {
                 task: item.task,
                 quantity: String(item.quantity ?? ""),
                 rate: String(item.rate ?? ""),
-                Rtaskorder_budget: taskorder?.id ?? "",
+                RTASKORDER_BUDGET: taskorder?.id ?? "",
                 nane: "",
               }) as TaskOrderLine,
           ),

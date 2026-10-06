@@ -14,7 +14,7 @@ const TASKORDER_ITEM_FIELDS = [
   "task",
   "quantity",
   "rate",
-  "Rtaskorder_budget",
+  "RTASKORDER_BUDGET",
   "name",
 ] as const;
 
@@ -24,7 +24,7 @@ export interface TaskOrderLine {
   task: string;
   quantity: string;
   rate: string;
-  Rtaskorder_budget: number | "" | null;
+  RTASKORDER_BUDGET: string;
   nane: number | "" | null;
 }
 
@@ -76,7 +76,7 @@ export const taskOrderLineCollection = createCollection(
           const row = mutation.modified;
           if (!lineHasContent(row)) return;
           await createTaskOrderLine({
-            Rtaskorder_budget: String(row.Rtaskorder_budget ?? ""),
+            Rtaskorder_budget: String(row.RTASKORDER_BUDGET ?? ""),
             task: row.task,
             taskorder_item: row.taskorder_item,
             quantity: row.quantity,
@@ -93,7 +93,7 @@ export const taskOrderLineCollection = createCollection(
             // Never synced — create the Intacct record once it carries content.
             if (!lineHasContent(row)) return;
             await createTaskOrderLine({
-              Rtaskorder_budget: String(row.Rtaskorder_budget ?? ""),
+              Rtaskorder_budget: String(row.RTASKORDER_BUDGET ?? ""),
               task: row.task,
               taskorder_item: row.taskorder_item,
               quantity: row.quantity,
@@ -105,7 +105,7 @@ export const taskOrderLineCollection = createCollection(
           if (sameTaskOrderLineFields(mutation.original, row)) return;
           await updateTaskOrderLine({
             recordNo: row.id,
-            Rtaskorder_budget: String(row.Rtaskorder_budget ?? ""),
+            Rtaskorder_budget: String(row.RTASKORDER_BUDGET ?? ""),
             task: row.task,
             taskorder_item: row.taskorder_item,
             quantity: row.quantity,
@@ -145,7 +145,7 @@ function lineHasContent(row: Pick<TaskOrderLine, "taskorder_item" | "task" | "qu
 
 function sameTaskOrderLineFields(a: Partial<TaskOrderLine>, b: TaskOrderLine): boolean {
   return (
-    (a.Rtaskorder_budget ?? "") === (b.Rtaskorder_budget ?? "") &&
+    (a.RTASKORDER_BUDGET ?? "") === (b.RTASKORDER_BUDGET ?? "") &&
     (a.taskorder_item ?? "") === (b.taskorder_item ?? "") &&
     (a.task ?? "") === (b.task ?? "") &&
     (a.quantity ?? "") === (b.quantity ?? "") &&

@@ -28,7 +28,7 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({taskord
         config={{
           collection: taskOrderLineCollection,
           fn: {
-            query: (q) => q.where(({ c }: any) => eq(c.Rtaskorder_budget, id)),
+            query: (q) => q.where(({ c }: any) => eq(c.RTASKORDER_BUDGET, id)),
             create: () =>
               taskOrderLineCollection.insert({
                 id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -36,7 +36,7 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({taskord
                 task: "",
                 quantity: "",
                 rate: "",
-                Rtaskorder_budget: id,
+                RTASKORDER_BUDGET: id,
                 nane: "",
               } as TaskOrderLine),
             update: ({ row, field, value }) =>
