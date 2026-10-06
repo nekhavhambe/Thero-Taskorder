@@ -14,10 +14,7 @@ interface TaskOrderLinesTableProps {
   }
 }
 
-export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
-  taskorder,
-  show,
-}) => {
+export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({taskorder, show}) => {
   
   const id = taskorder?.id ?? "";
   const columns = useMemo(() => buildTaskOrderLineColumns(), []);
@@ -31,17 +28,17 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
         config={{
           collection: taskOrderLineCollection,
           fn: {
-            query: (q) => q.where(({ c }: any) => eq(c.taskOrderId, id)),
+            query: (q) => q.where(({ c }: any) => eq(c.Rtaskorder_budget, id)),
             create: () =>
               taskOrderLineCollection.insert({
                 id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                taskOrderId: id,
-                taskOrderRecordNo: "",
-                description: "",
+                taskorder_item: "",
                 task: "",
-                quantity: 0,
-                rate: 0,
-              }),
+                quantity: "",
+                rate: "",
+                Rtaskorder_budget: id,
+                nane: "",
+              } as TaskOrderLine),
             update: ({ row, field, value }) =>
               taskOrderLineCollection.update(row.id, (draft) => {
                 (draft as Record<string, unknown>)[field] = value;

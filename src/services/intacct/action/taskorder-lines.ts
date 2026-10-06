@@ -7,8 +7,8 @@ export interface CreateTaskOrderLineData {
   task_id?: string;
   item_id?: string;
   taskorder_item?: string;
-  quantity?: number | "" | null;
-  rate?: number | "" | null;
+  quantity?: number | string | "" | null;
+  rate?: number | string | "" | null;
 }
 
 export interface CreateTaskOrderLineResult {

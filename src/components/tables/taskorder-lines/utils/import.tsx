@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { taskOrderLineCollection } from "../../../../collections/task-order-lines";
+import type { TaskOrderLine } from "../../../../collections/task-order-lines";
 import { parseCSV } from "./csv";
 
 export const TABLE_IMPORT_EVENT = "thero:table-import";
@@ -44,15 +45,18 @@ export function useImport({ taskorder }: Options) {
 
       if (items.length > 0) {
         const tx = taskOrderLineCollection.insert(
-          items.map((item) => ({
-            id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            taskOrderId: taskorder?.id,
-            taskOrderRecordNo: taskorder?.id,
-            description: item.description,
-            task: item.task,
-            quantity: item.quantity,
-            rate: item.rate,
-          })),
+          items.map(
+            (item) =>
+              ({
+                id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                taskorder_item: item.description,
+                task: item.task,
+                quantity: String(item.quantity ?? ""),
+                rate: String(item.rate ?? ""),
+                Rtaskorder_budget: taskorder?.id ?? "",
+                nane: "",
+              }) as TaskOrderLine,
+          ),
         );
         await tx.when("settled");
       }

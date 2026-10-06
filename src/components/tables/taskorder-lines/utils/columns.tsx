@@ -10,7 +10,7 @@ export const CURRENCY_SYMBOL = 'R ';
 
 export const buildTaskOrderLineColumns = ( currencySymbol: string = CURRENCY_SYMBOL ): EntryColumn<TaskOrderLine>[] => [
   {
-    key: 'description',
+    key: 'taskorder_item',
     header: 'Description',
     width: 320,
     align: 'left',
