@@ -171,6 +171,8 @@ export function Table<T extends object>({
   );
 
   return (
+    <>
+    {JSON.stringify(liveData)}
     <View<T>
       rows={rows}
       fn={fn}
@@ -190,5 +192,6 @@ export function Table<T extends object>({
       onDelete={deleteRow}
       isRowBusy={isRowBusy}
     />
+    </>
   );
 }
