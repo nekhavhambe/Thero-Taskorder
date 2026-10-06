@@ -12,6 +12,7 @@
     "build:local": "tsc -b && vite build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "redeploy": "npm run build && git add -A && git commit -m \"Redeploy latest changes\" && git push origin main",
     "lint": "oxlint",
     "preview": "vite preview"
   },

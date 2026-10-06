@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { eq } from "@tanstack/react-db";
 import { Table } from "../entry-table";
 import { taskOrderLineCollection } from "../../../collections/task-order-lines";
 import type { TaskOrderLine } from "../../../collections/task-order-lines";
@@ -24,11 +23,12 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({taskord
     <>
       {fileInput}
       {uploadInput}
+      {JSON.stringify({order: id})}
       <Table<TaskOrderLine>
         config={{
           collection: taskOrderLineCollection,
           fn: {
-            query: (q) => q.where(({ c }: any) => eq(c.RTASKORDER_BUDGET, id)),
+            // query: (q) => q.where(({ c }: any) => eq(c.RTASKORDER_BUDGET, id)),
             create: () =>
               taskOrderLineCollection.insert({
                 id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
