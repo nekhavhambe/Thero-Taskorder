@@ -21,14 +21,9 @@ export interface TaskOrderConfig {
 }
 
 function AppInner() {
+
   const { id } = useParams();
-  // Template literals turn undefined into "undefined" — normalize first so a
-  // missing ?id= param matches nothing instead of a phantom string.
-  // Embedders sometimes wrap the id (e.g. ?id=11364}) — strip wrapping braces.
   const idParam = String(id ?? "")
-    .trim()
-    .replace(/^\{/, "")
-    .replace(/\}$/, "");
   const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
@@ -36,18 +31,10 @@ function AppInner() {
       .findOne(),
   );
 
-    const { data: un }: any = useLiveSuspenseQuery((q) =>
-    q
-      .from({ TaskOrders: taskOrderCollection })
-      // .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
-      .findOne(),
-  );
-
-  const rproject: string = taskOrder?.RPROJECT ?? "";
   const { data: project }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ Project: projectCollection })
-      .where(({ Project }) => eq(Project.RECORDNO, rproject))
+      .where(({ Project }) => eq(Project.RECORDNO, taskOrder?.RPROJECT ?? ""))
       .findOne(),
   );
 
@@ -78,10 +65,8 @@ function AppInner() {
       {JSON.stringify(
         {
           taskOrder: taskOrder ?? null,
-          nofilter: un,
           project: project?? null,
           idParam,
-          rproject
         },
         null,
         2,
