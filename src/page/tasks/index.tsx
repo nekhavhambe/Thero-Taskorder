@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { DataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
-import { standardTaskCollection } from '../../collections/standard-tasks';
+import { standardTaskCollection } from '../../collections/tasks';
 import { useCollectionItems } from '../../collections/helpers';
-import type { StandardTask } from '../../collections/standard-tasks';
+import type { StandardTask } from '../../collections/tasks';
+import type { TaskOrderConfig } from '../task-orders';
 
 const taskColumns: EntryColumn<StandardTask>[] = [
   {
@@ -53,9 +55,14 @@ const taskColumns: EntryColumn<StandardTask>[] = [
   },
 ];
 
-/** Tasks tab — standard tasks (TaskID, Task, Task Info, Status). */
+/** Tasks tab — tasks for the current project (PROJECTKEY = task order RPROJECT). */
 export const Tasks: FC = () => {
-  const rows = useCollectionItems<StandardTask>(standardTaskCollection);
+  const { getValues } = useFormContext<TaskOrderConfig>();
+  const projectKey = String(getValues("project.key") ?? "").trim();
+  const allRows = useCollectionItems<StandardTask>(standardTaskCollection);
+  const rows = projectKey
+    ? allRows.filter((t) => String(t.PROJECTKEY ?? "").trim() === projectKey)
+    : allRows;
   const [pageSize, setPageSize] = useState(10);
 
   return (
@@ -71,7 +78,7 @@ export const Tasks: FC = () => {
         reorderable={false}
         removable={false}
         showRowNumbers={false}
-        emptyText="No tasks yet."
+        emptyText={projectKey ? "No tasks for this project." : "No tasks yet."}
       />
     </div>
   );

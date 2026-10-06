@@ -9,20 +9,22 @@ export interface StandardTask {
   NAME: string;
   DESCRIPTION?: string;
   STATUS?: string;
+  PROJECTKEY?: string;
+  PROJECTID?: string;
 }
 
 
 export const client = new QueryClient();
 export const standardTaskCollection = createCollection(
   queryCollectionOptions({
-    id: "standard-tasks",
-    queryKey: ["standard-tasks"],
+    id: "tasks",
+    queryKey: ["tasks"],
     queryFn: async () => {
       try {
         const { data } = await query({
-          object: "STANDARDTASK",
-          fields: ["RECORDNO","STANDARDTASKID","NAME","DESCRIPTION", "STATUS"],
-          orderBy: "STANDARDTASKID",
+          object: "TASK",
+          fields: ["RECORDNO","TASKID","NAME","DESCRIPTION", "STATUS", "PROJECTKEY", "PROJECTID"],
+          orderBy: "TASKID",
         });
    
         return data || [];
