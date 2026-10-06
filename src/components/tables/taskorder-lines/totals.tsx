@@ -7,7 +7,7 @@ import { taskOrderLineCollection } from '../../../collections/task-order-lines';
 import type { TaskOrderLine } from '../../../collections/task-order-lines';
 import type { AnyCollection } from '../../../collections/helpers';
 import { lineValue } from './columns';
-import { SUPPORTED_CURRENCIES } from './index';
+import { CURRENCY_SYMBOL } from './columns';
 
 const DEFAULT_TAX_RATE = 0.15;
 
@@ -22,7 +22,7 @@ export const TotalsSummary: FC = () => {
   const tax = untaxed * DEFAULT_TAX_RATE;
   const total = untaxed + tax;
   const taxLabel = `Tax ${Number((DEFAULT_TAX_RATE * 100).toFixed(2))}%:`;
-  const currencySymbol = SUPPORTED_CURRENCIES[0].symbol;
+  const currencySymbol = CURRENCY_SYMBOL;
 
   return (
     <div className="flex justify-end mt-3">

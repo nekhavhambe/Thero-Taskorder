@@ -7,7 +7,10 @@ import type { TaskOrderLine } from '../../../collections/task-order-lines';
 const getStandardTaskKey = (task: StandardTask): string => task.RECORDNO?.trim() ? task.RECORDNO : task.STANDARDTASKID || task.NAME;
 export const lineValue = (row: TaskOrderLine): number => (parseNumeric(row.quantity) ?? 0) * (parseNumeric(row.rate) ?? 0);
 
-export const buildTaskOrderLineColumns = ( currencySymbol: string ): EntryColumn<TaskOrderLine>[] => [
+/** ZAR only — hardcoded (no multi-currency support). */
+export const CURRENCY_SYMBOL = 'R ';
+
+export const buildTaskOrderLineColumns = ( currencySymbol: string = CURRENCY_SYMBOL ): EntryColumn<TaskOrderLine>[] => [
   {
     key: 'description',
     header: 'Description',

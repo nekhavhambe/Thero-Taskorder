@@ -124,8 +124,6 @@ export const parseJSONToTaskOrderLines = (jsonText: string): ImportedTaskOrderLi
 export interface UseLineFilesOptions {
   taskOrderId?: string;
   taskOrderRecordNo?: string;
-  onImportSuccess?: (count: number) => void;
-  onUploadSuccess?: (files: File[]) => void;
 }
 
 /**
@@ -135,8 +133,6 @@ export interface UseLineFilesOptions {
 export function useLineFiles({
   taskOrderId = '',
   taskOrderRecordNo = '',
-  onImportSuccess,
-  onUploadSuccess,
 }: UseLineFilesOptions = {}): { fileInput: ReactNode; uploadInput: ReactNode } {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -170,7 +166,6 @@ export function useLineFiles({
           })),
         );
         await tx.when('settled');
-        onImportSuccess?.(items.length);
       }
     } catch (err) {
       console.error('Failed to import file:', err);
@@ -179,9 +174,7 @@ export function useLineFiles({
     }
   };
 
-  const handleUploadChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = [...(e.target.files ?? [])];
-    if (files.length > 0) onUploadSuccess?.(files);
+  const handleUploadChange = () => {
     if (uploadInputRef.current) uploadInputRef.current.value = '';
   };
 

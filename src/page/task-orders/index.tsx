@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Field } from "../../components/forms/field";
 import { TextInput } from "../../components/inputs/textinput";
 import { Autocomplete } from "../../components/inputs/autocomplete";
 import { DatePicker } from "../../components/inputs/datepicker";
 import {
-  SUPPORTED_CURRENCIES,
   TaskOrderLinesTable,
 } from "../../components/tables/taskorder-lines";
 import type { Project } from "../../collections/projects";
@@ -26,34 +24,11 @@ export const TaskOrders = () => {
   const isNewPage = page === "new";
   // Parent order id from the header form — scopes the lines grid below.
   const taskOrderId = getValues("id") ?? "";
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const currency = SUPPORTED_CURRENCIES[0];
 
   const getProjectKey = (project: Project): string => project.RECORDNO?.trim() ? project.RECORDNO : project.PROJECTID;
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3200);
-  };
-
-  const handleImportSuccess = (count: number) => {
-    showToast(`Imported ${count} line item(s).`);
-  };
-
-  const handleUploadSuccess = (files: File[]) => {
-    const names = files.map((f) => f.name).join(", ");
-    showToast(
-      `Attached ${files.length} file${files.length === 1 ? "" : "s"}: ${names}`,
-    );
-  };
-
   return (
     <>
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs px-3.5 py-2 rounded-md shadow-lg border border-slate-700 animate-fade-in">
-          {toastMessage}
-        </div>
-      )}
       <div className="grid grid-cols-2 gap-4">
         <Field
           label="Name"
@@ -137,10 +112,7 @@ export const TaskOrders = () => {
       {!isNewPage && (
         <div className="mt-6 -mx-6 overflow-hidden rounded-b [&>div]:border-x-0 [&>div]:border-b-0">
           <TaskOrderLinesTable
-            currency={currency}
             taskorder={{ id: taskOrderId }}
-            onImportSuccess={handleImportSuccess}
-            onUploadSuccess={handleUploadSuccess}
           />
         </div>
       )}
