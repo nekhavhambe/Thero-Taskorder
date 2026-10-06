@@ -58,7 +58,7 @@ export const taskOrderLineCollection = createCollection(
           orderBy: orderField,
           ...(limit != null ? { limit } : {}),
         });
-
+        alert(`[taskorder query] rows=${JSON.stringify(data)}`);
         return (data || []) as unknown as TaskOrderLine[];
       } catch (err) {
         console.warn("Task order lines refresh skipped:", (err as Error).message);

@@ -17,7 +17,6 @@ export interface RFQFormData {
   expectedArrival: string; // 'YYYY-MM-DD'
   arrivalConfirmation: boolean;
   deliverTo: string;
-  /** Read-only summary fields. */
   salesOrderNumber: string;
   poNumber: string;
   billedAmount: string;

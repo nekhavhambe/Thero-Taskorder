@@ -33,7 +33,7 @@ export const taskOrderCollection = createCollection(
           orderBy: "id",
         });
 
-        alert(`[taskorder query] rows=${JSON.stringify(data)}`);
+
         return (data || [])
       } catch {
         return [];
