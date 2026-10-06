@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { CollectionDataTable } from '../entry-table/table';
-import type { EntryColumn } from '../entry-table/table';
-import { formatCurrency, parseNumeric } from '../entry-table';
+import { CollectionDataTable, formatCurrency, parseNumeric } from '../entry-table';
+import type { EntryColumn } from '../entry-table';
 import { standardTaskCollection } from '../../../collections/standard-tasks';
 import type { StandardTask } from '../../../collections/standard-tasks';
 import { taskOrderLineCollection } from '../../../collections/task-order-lines';

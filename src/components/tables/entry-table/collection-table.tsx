@@ -1,37 +1,16 @@
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import type { AnyCollection } from "../../../collections/helpers";
-import { TableView } from "./table-view";
-import { defaultResolveId, normalizeLiveRows, waitForPersist } from "./cells";
+import { View } from "./elements/view";
+import { defaultResolveId, normalizeLiveRows, waitForPersist } from "./elements/cells";
 import type { CollectionDataTableProps } from "./types";
-
-function CollectionTableFallback({ emptyText }: { emptyText?: string }) {
-  return (
-    <div
-      className="w-full bg-white border border-slate-300 shadow-xs overflow-hidden px-4 py-8 text-center text-xs text-slate-400"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-    >
-      <Loader2 className="w-4 h-4 animate-spin inline-block mr-2 text-slate-400" />
-      {emptyText ?? "Loading rows…"}
-    </div>
-  );
-}
 
 // ==========================================
 // COLLECTION TABLE (live query + insert/update/delete with awaited persist)
 // ==========================================
 
 /** Collection-backed grid (live query + insert/update/delete with awaited persist). */
-export function CollectionDataTable<T extends object>(props: CollectionDataTableProps<T>) {
-  return (
-    <Suspense fallback={<CollectionTableFallback emptyText={props.emptyText} />}>
-      <CollectionDataTableView {...props} />
-    </Suspense>
-  );
-}
-
-function CollectionDataTableView<T extends object>({
+export function CollectionDataTable<T extends object>({
   collection,
   columns,
   getRowId,
@@ -149,7 +128,7 @@ function CollectionDataTableView<T extends object>({
   );
 
   return (
-    <TableView<T>
+    <View<T>
       rows={rows}
       columns={columns}
       resolveId={resolveId}

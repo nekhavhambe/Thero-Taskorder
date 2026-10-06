@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { TextInput } from "../../inputs/textinput";
-import type { AnyCollection } from "../../../collections/helpers";
+import { TextInput } from "../../../inputs/textinput";
+import type { AnyCollection } from "../../../../collections/helpers";
 
 // ==========================================
 // SHARED HELPERS

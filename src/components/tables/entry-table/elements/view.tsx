@@ -30,19 +30,19 @@ import {
   ChevronsRight,
   Loader2,
 } from "lucide-react";
-import { NumericInput } from "../../inputs/numericinput";
-import { DatePicker } from "../../inputs/datepicker";
-import { Select as StdSelect } from "../../inputs/select";
-import { Autocomplete } from "../../inputs/autocomplete";
+import { NumericInput } from "../../../inputs/numericinput";
+import { DatePicker } from "../../../inputs/datepicker";
+import { Select as StdSelect } from "../../../inputs/select";
+import { Autocomplete } from "../../../inputs/autocomplete";
 import { TextCell } from "./cells";
 import { DraggableRow } from "./draggable-row";
-import type { CellContext, EntryColumn } from "./types";
+import type { CellContext, EntryColumn } from "../types";
 
 // ==========================================
 // STANDALONE TABLE VIEW (pure presentational grid)
 // ==========================================
 
-export interface TableViewProps<T extends object> {
+export interface ViewProps<T extends object> {
   rows: T[];
   columns: EntryColumn<T>[];
   resolveId: (row: T) => string;
@@ -66,7 +66,7 @@ export interface TableViewProps<T extends object> {
   minWidth?: number;
 }
 
-export function TableView<T extends object>({
+export function View<T extends object>({
   rows,
   columns,
   resolveId,
@@ -83,7 +83,7 @@ export function TableView<T extends object>({
   showRowNumbers = true,
   emptyText = "No rows yet. Add a line to get started.",
   minWidth = 980,
-}: TableViewProps<T>) {
+}: ViewProps<T>) {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
