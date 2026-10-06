@@ -5,7 +5,7 @@ import { taskOrderLineCollection } from "../../../collections/task-order-lines";
 import type { TaskOrderLine } from "../../../collections/task-order-lines";
 import { buildTaskOrderLineColumns } from "./utils/columns";
 import { TotalsSummary } from "./element/totals";
-import { useLineFiles } from "./use-line-files";
+import { useImport } from "./utils/import";
 
 interface TaskOrderLinesTableProps {
   taskorder?: { id: string };
@@ -21,7 +21,7 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
   
   const id = taskorder?.id ?? "";
   const columns = useMemo(() => buildTaskOrderLineColumns(), []);
-  const { fileInput, uploadInput } = useLineFiles({ taskorder: { id: id } });
+  const { fileInput, uploadInput } = useImport({ taskorder: { id: id } });
 
   return (
     <>
@@ -32,15 +32,16 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
           collection: taskOrderLineCollection,
           fn: {
             query: (q) => q.where(({ c }: any) => eq(c.taskOrderId, id)),
-            create: () => ({
-              id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              taskOrderId: id,
-              taskOrderRecordNo: "",
-              description: "",
-              task: "",
-              quantity: 0,
-              rate: 0,
-            }),
+            create: () =>
+              taskOrderLineCollection.insert({
+                id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                taskOrderId: id,
+                taskOrderRecordNo: "",
+                description: "",
+                task: "",
+                quantity: 0,
+                rate: 0,
+              }),
             update: ({ row, field, value }) =>
               taskOrderLineCollection.update(row.id, (draft) => {
                 (draft as Record<string, unknown>)[field] = value;

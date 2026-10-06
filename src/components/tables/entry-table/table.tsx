@@ -17,7 +17,8 @@ export interface TableMutation<T extends object> {
 
 export interface TableFn<T extends object> {
   query?: (q: TableQuery) => TableQuery;
-  create: (index: number) => T;
+  /** Performs the insert (e.g. `collection.insert(row)`) — Table awaits the result. */
+  create: (index: number) => unknown;
   update: (mutation: TableMutation<T>) => unknown;
   remove: (mutation: TableMutation<T>) => unknown;
 }
@@ -120,22 +121,20 @@ export function Table<T extends object>({
   );
 
 
-  /** Insert the blank row built by `fn.create` for `index`. */
+  /** Add-line button: run the caller's `fn.create`, await persist. */
   const insertRowAt = useCallback(
     async (index: number) => {
       setIsCreating(true);
       try {
-        const tx = (
-          collection as unknown as { insert: (item: unknown) => unknown }
-        ).insert(fn.create(index));
-        await waitForPersist(tx);
+        const result = await fn.create(index);
+        await waitForPersist(result);
       } catch (err) {
         console.error("Table create failed:", err);
       } finally {
         setIsCreating(false);
       }
     },
-    [collection, fn],
+    [fn],
   );
 
   /** Add-line button: append at the end. */

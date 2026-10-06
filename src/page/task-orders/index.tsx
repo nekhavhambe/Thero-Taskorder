@@ -19,12 +19,11 @@ export interface TaskOrderConfig {
 }
 
 export const TaskOrders = () => {
+
   const { register, control, getValues } = useFormContext<TaskOrderConfig>();
   const { page } = useParams();
   const isNewPage = page === "new";
-  // Parent order id from the header form — scopes the lines grid below.
   const taskOrderId = getValues("id") ?? "";
-
   const getProjectKey = (project: Project): string => project.RECORDNO?.trim() ? project.RECORDNO : project.PROJECTID;
 
   return (

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
-import { taskOrderLineCollection } from "../../../collections/task-order-lines";
-import { parseCSV } from "./utils/csv";
+import { taskOrderLineCollection } from "../../../../collections/task-order-lines";
+import { parseCSV } from "./csv";
 
 export const TABLE_IMPORT_EVENT = "thero:table-import";
 export const TABLE_UPLOAD_EVENT = "thero:table-upload";
@@ -19,7 +19,7 @@ export function requestTableUpload(): void {
 export interface Options {
   taskorder: { id: string };
 }
-export function useLineFiles({ taskorder }: Options) {
+export function useImport({ taskorder }: Options) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);

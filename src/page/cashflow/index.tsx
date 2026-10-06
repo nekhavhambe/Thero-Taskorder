@@ -187,7 +187,10 @@ export const Cashflow: FC = () => {
           config={{
             collection: cashflowCollection,
             fn: {
-              create: () => createBlankCashflowRow(`${Date.now()}-${Math.random()}`),
+              create: () =>
+                cashflowCollection.insert(
+                  createBlankCashflowRow(`${Date.now()}-${Math.random()}`),
+                ),
               update: ({ row, field, value }) =>
                 cashflowCollection.update(row.id, (draft) => {
                   (draft as Record<string, unknown>)[field] = value;

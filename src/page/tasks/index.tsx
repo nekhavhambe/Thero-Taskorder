@@ -64,7 +64,7 @@ export const Tasks: FC = () => {
       query: projectKey
         ? (q: TableQuery) => q.where(({ c }: any) => eq(c.PROJECTKEY, projectKey))
         : undefined,
-      create: () => ({}) as StandardTask,
+      create: () => standardTaskCollection.insert({}),
       update: ({ row, field, value }) =>
         standardTaskCollection.update(
           (row as unknown as { id: string }).id,

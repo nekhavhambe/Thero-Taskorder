@@ -13,7 +13,7 @@ import type { ToolbarAction } from "../toolbar";
 import {
   requestTableImport,
   requestTableUpload,
-} from "../../tables/taskorder-lines/use-line-files";
+} from "../../tables/taskorder-lines/utils/import";
 import Container from "../container";
 import { useParams } from "../../../hook/params";
 import { useFormContext } from "react-hook-form";

@@ -127,7 +127,10 @@ export const Requisitions: FC = () => {
         config={{
           collection: purchaseRequisitionDocumentsCollection,
           fn: {
-            create: () => ({}) as PurchaseDocument,
+            create: () =>
+              purchaseRequisitionDocumentsCollection.insert(
+                {},
+              ),
             update: ({ row, field, value }) =>
               purchaseRequisitionDocumentsCollection.update(
                 (row as unknown as { id: string }).id,
