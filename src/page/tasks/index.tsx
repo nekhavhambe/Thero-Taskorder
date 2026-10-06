@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { StaticDataTable } from '../../components/tables/entry-table';
+import { eq } from '@tanstack/react-db';
+import { CollectionDataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { standardTaskCollection } from '../../collections/tasks';
-import { useCollectionItems } from '../../collections/helpers';
 import type { StandardTask } from '../../collections/tasks';
 import type { TaskOrderConfig } from '../task-orders';
 
@@ -59,20 +59,16 @@ const taskColumns: EntryColumn<StandardTask>[] = [
 export const Tasks: FC = () => {
   const { getValues } = useFormContext<TaskOrderConfig>();
   const projectKey = String(getValues("project.key") ?? "").trim();
-  const allRows = useCollectionItems<StandardTask>(standardTaskCollection);
-  const rows = projectKey
-    ? allRows.filter((t) => String(t.PROJECTKEY ?? "").trim() === projectKey)
-    : allRows;
   const [pageSize, setPageSize] = useState(10);
 
   return (
     <div className="-mx-6 -mb-6 -mt-6 overflow-hidden rounded [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-      <StaticDataTable<StandardTask>
-        data={rows}
-        onChange={() => {}}
+      <CollectionDataTable<StandardTask>
+        collection={standardTaskCollection}
         columns={taskColumns}
         getRowId={(row) => (row.RECORDNO?.trim() ? row.RECORDNO : row.STANDARDTASKID || row.NAME)}
         createRow={() => ({}) as StandardTask}
+        where={projectKey ? ({ c }: any) => eq(c.PROJECTKEY, projectKey) : undefined}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
         reorderable={false}

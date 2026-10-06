@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FC } from 'react';
-import { StaticDataTable } from '../../components/tables/entry-table';
+import { CollectionDataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency } from '../../components/tables/entry-table';
 import {
   purchaseRequisitionDocumentsCollection,
   refreshPurchaseRequisitionDocuments,
 } from '../../collections/purchase-requisition-documents';
-import { useCollectionItems } from '../../collections/helpers';
 import type { PurchaseDocument } from '../../collections/purchase-document';
 
 const formatDate = (value: string | undefined): string => {
@@ -116,7 +115,6 @@ const requisitionColumns: EntryColumn<PurchaseDocument>[] = [
 
 /** Requisitions tab — purchase requisition documents with Convert to PO. */
 export const Requisitions: FC = () => {
-  const rows = useCollectionItems<PurchaseDocument>(purchaseRequisitionDocumentsCollection);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
@@ -127,9 +125,8 @@ export const Requisitions: FC = () => {
 
   return (
     <div className="-mx-6 -mb-6 -mt-6 overflow-hidden rounded [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-      <StaticDataTable<PurchaseDocument>
-        data={rows}
-        onChange={() => {}}
+      <CollectionDataTable<PurchaseDocument>
+        collection={purchaseRequisitionDocumentsCollection}
         columns={requisitionColumns}
         getRowId={(row) => String(row.RECORDNO ?? '')}
         createRow={() => ({}) as PurchaseDocument}

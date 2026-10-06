@@ -1,11 +1,9 @@
-export { StaticDataTable } from './static-table';
 export { CollectionDataTable } from './collection-table';
 export type {
   CellContext,
   CollectionDataTableProps,
   EditorConfig,
   EntryColumn,
-  StaticDataTableProps,
 } from './types';
 
 export const parseNumeric = (val: unknown): number | null => {

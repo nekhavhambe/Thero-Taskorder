@@ -1,21 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FC } from 'react';
-import { StaticDataTable } from '../../components/tables/entry-table';
+import { CollectionDataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency, parseNumeric } from '../../components/tables/entry-table';
+import { cashflowCollection } from '../../collections/cashflow';
+import type { CashflowRow } from '../../collections/cashflow';
+import { useCollectionItems } from '../../collections/helpers';
 import { Field } from '../../components/forms/field';
 import { NumericInput } from '../../components/inputs/numericinput';
 import { TOOLBAR_ACTION_EVENT } from '../../components/layouts/toolbar';
 import type { ToolbarActionDetail } from '../../components/layouts/toolbar';
-
-export interface CashflowRow {
-  id: string;
-  period: string;
-  revenue: number | '' | null;
-  cost: number | '' | null;
-  actualRevenue: number | '' | null;
-  actualCost: number | '' | null;
-}
 
 const createBlankCashflowRow = (idSuffix: string | number = Date.now()): CashflowRow => ({
   id: `cashflow-${idSuffix}`,
@@ -125,7 +119,9 @@ const cashflowColumns: EntryColumn<CashflowRow>[] = [
 
 /** Cashflow tab — forecast vs actuals per reporting period. */
 export const Cashflow: FC = () => {
-  const [entries, setEntries] = useState<CashflowRow[]>(() => [createBlankCashflowRow('new-1')]);
+  const rows = useCollectionItems<CashflowRow>(cashflowCollection);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const [pageSize, setPageSize] = useState(10);
   const [budgeted, setBudgeted] = useState<number | null>(null);
   const [billed, setBilled] = useState<number | null>(null);
@@ -135,7 +131,13 @@ export const Cashflow: FC = () => {
   useEffect(() => {
     const handler = (e: Event) => {
       const { action } = (e as CustomEvent<ToolbarActionDetail>).detail;
-      if (action === 'new') setEntries([createBlankCashflowRow(`new-${Date.now()}`)]);
+      if (action === 'new') {
+        const current = rowsRef.current;
+        if (current.length > 0) {
+          cashflowCollection.delete(current.map((r) => r.id));
+        }
+        cashflowCollection.insert(createBlankCashflowRow(`new-${Date.now()}`));
+      }
     };
     window.addEventListener(TOOLBAR_ACTION_EVENT, handler);
     return () => window.removeEventListener(TOOLBAR_ACTION_EVENT, handler);
@@ -182,9 +184,8 @@ export const Cashflow: FC = () => {
         </Field>
       </div>
       <div className="-mx-6 -mb-6 overflow-hidden [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-        <StaticDataTable<CashflowRow>
-          data={entries}
-          onChange={(rows) => setEntries(rows)}
+        <CollectionDataTable<CashflowRow>
+          collection={cashflowCollection}
           columns={cashflowColumns}
           createRow={() => createBlankCashflowRow(`${Date.now()}-${Math.random()}`)}
           pageSize={pageSize}

@@ -25,5 +25,7 @@ export { taskOrderCollection } from './task-order';
 export type { TaskOrder } from './task-order';
 export { taskOrderLineCollection, TASKORDER_ITEM_OBJECT } from './task-order-lines';
 export type { TaskOrderLine } from './task-order-lines';
+export { cashflowCollection } from './cashflow';
+export type { CashflowRow } from './cashflow';
 export { formatDisplayFields, useCollectionItems } from './helpers';
 export type { AnyCollection } from './helpers';

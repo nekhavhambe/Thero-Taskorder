@@ -60,16 +60,6 @@ interface TableChromeProps {
   createRow: () => any;
 }
 
-export interface StaticDataTableProps<
-  T extends object,
-> extends TableChromeProps {
-  data: T[];
-  onChange: (rows: T[]) => void;
-  columns: EntryColumn<T>[];
-  getRowId?: (row: T) => string;
-  createRow: () => T;
-}
-
 export interface CollectionDataTableProps<
   T extends object,
 > extends TableChromeProps {
