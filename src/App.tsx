@@ -24,7 +24,11 @@ function AppInner() {
   const { id } = useParams();
   // Template literals turn undefined into "undefined" — normalize first so a
   // missing ?id= param matches nothing instead of a phantom string.
-  const idParam = String(id ?? "").trim();
+  // Embedders sometimes wrap the id (e.g. ?id=11364}) — strip wrapping braces.
+  const idParam = String(id ?? "")
+    .trim()
+    .replace(/^\{/, "")
+    .replace(/\}$/, "");
   const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
