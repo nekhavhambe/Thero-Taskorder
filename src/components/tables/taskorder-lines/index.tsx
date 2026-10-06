@@ -1,39 +1,27 @@
-import { useMemo } from 'react';
-import { eq } from '@tanstack/react-db';
-import { Table } from '../entry-table';
-import { taskOrderLineCollection } from '../../../collections/task-order-lines';
-import type { TaskOrderLine } from '../../../collections/task-order-lines';
-import { buildTaskOrderLineColumns } from './columns';
-import { TotalsSummary } from './totals';
-import { createTaskOrderLineRow, useLineFiles } from './use-line-files';
-
-export {
-  TABLE_IMPORT_EVENT,
-  TABLE_UPLOAD_EVENT,
-  requestTableImport,
-  requestTableUpload,
-  createTaskOrderLineRow,
-  parseCSVToTaskOrderLines,
-  parseJSONToTaskOrderLines,
-} from './use-line-files';
-export type { ImportedTaskOrderLine } from './use-line-files';
+import { useMemo } from "react";
+import { eq } from "@tanstack/react-db";
+import { Table } from "../entry-table";
+import { taskOrderLineCollection } from "../../../collections/task-order-lines";
+import type { TaskOrderLine } from "../../../collections/task-order-lines";
+import { buildTaskOrderLineColumns } from "./utils/columns";
+import { TotalsSummary } from "./element/totals";
+import { useLineFiles } from "./use-line-files";
 
 interface TaskOrderLinesTableProps {
   taskorder?: { id: string };
-  showTotals?: boolean;
+  show?:{
+     totals? : boolean;
+  }
 }
 
 export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
   taskorder,
-  showTotals = true,
+  show,
 }) => {
-  const taskOrderId = taskorder?.id ?? '';
-  const taskOrderRecordNo = '';
+  
+  const id = taskorder?.id ?? "";
   const columns = useMemo(() => buildTaskOrderLineColumns(), []);
-  const { fileInput, uploadInput } = useLineFiles({
-    taskOrderId,
-    taskOrderRecordNo,
-  });
+  const { fileInput, uploadInput } = useLineFiles({ taskorder: { id: id } });
 
   return (
     <>
@@ -43,8 +31,16 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
         config={{
           collection: taskOrderLineCollection,
           fn: {
-            query: (q) => q.where(({ c }: any) => eq(c.taskOrderId, taskOrderId)),
-            create: () => createTaskOrderLineRow({ taskOrderId, taskOrderRecordNo }),
+            query: (q) => q.where(({ c }: any) => eq(c.taskOrderId, id)),
+            create: () => ({
+              id: `line-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              taskOrderId: id,
+              taskOrderRecordNo: "",
+              description: "",
+              task: "",
+              quantity: 0,
+              rate: 0,
+            }),
             update: ({ row, field, value }) =>
               taskOrderLineCollection.update(row.id, (draft) => {
                 (draft as Record<string, unknown>)[field] = value;
@@ -58,7 +54,7 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
           },
         }}
       />
-      {showTotals && <TotalsSummary />}
+      {show?.totals && <TotalsSummary />}
     </>
   );
 };

@@ -1,22 +1,19 @@
 import { useMemo } from 'react';
 import type { FC } from 'react';
 import { useLiveSuspenseQuery } from '@tanstack/react-db';
-import { formatCurrency } from '../entry-table';
-import { normalizeLiveRows } from '../entry-table/elements/cells';
-import { taskOrderLineCollection } from '../../../collections/task-order-lines';
-import type { TaskOrderLine } from '../../../collections/task-order-lines';
-import type { AnyCollection } from '../../../collections/helpers';
-import { lineValue } from './columns';
-import { CURRENCY_SYMBOL } from './columns';
+import { formatCurrency } from '../../entry-table';
+import { normalizeLiveRows } from '../../entry-table/elements/cells';
+import { taskOrderLineCollection } from '../../../../collections/task-order-lines';
+import type { TaskOrderLine } from '../../../../collections/task-order-lines';
+import type { AnyCollection } from '../../../../collections/helpers';
+import { lineValue } from '../utils/columns';
+import { CURRENCY_SYMBOL } from '../utils/columns';
 
 const DEFAULT_TAX_RATE = 0.15;
 
 export const TotalsSummary: FC = () => {
-  const { data } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ c: taskOrderLineCollection as AnyCollection })
-      .select(({ c }: any) => c),
-  );
+  
+  const { data } = useLiveSuspenseQuery((q) => q.from({ c: taskOrderLineCollection as AnyCollection }).select(({ c }: any) => c));
   const rows = useMemo(() => normalizeLiveRows<TaskOrderLine>(data), [data]);
   const untaxed = rows.reduce((sum, r) => sum + lineValue(r), 0);
   const tax = untaxed * DEFAULT_TAX_RATE;
