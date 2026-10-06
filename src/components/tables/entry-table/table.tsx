@@ -95,10 +95,6 @@ export interface EntryColumn<T> {
   footer?: (rows: T[]) => ReactNode;
 }
 
-// ==========================================
-// PROPS — static mode (data/onChange) vs collection mode
-// ==========================================
-
 interface TableChromeProps {
   columns: EntryColumn<any>[];
   pageSize?: number;
@@ -926,9 +922,6 @@ export function StaticDataTable<T extends object>({
   );
 }
 
-// ==========================================
-// COLLECTION MODE (live query + persisted CRUD)
-// ==========================================
 
 function CollectionDataTableInner<T extends object>({
   collection,
@@ -947,16 +940,13 @@ function CollectionDataTableInner<T extends object>({
   emptyText,
   minWidth,
 }: CollectionDataTableProps<T>) {
-  // Ensure on-demand (query) collections start syncing on mount.
+
   useEffect(() => {
     (collection as unknown as { preload?: () => Promise<unknown> })
       ?.preload?.()
       .catch(() => {});
   }, [collection]);
 
-  // Live rows of the passed collection, with caller-supplied filters
-  // pushed into the live query (Intacct query collections translate
-  // equality filters into server-side where clauses).
   const { data: liveData } = useLiveSuspenseQuery((q) => {
     const base = q.from({ c: collection as AnyCollection });
     let qb: any = base.select(({ c }: any) => c);
@@ -985,8 +975,6 @@ function CollectionDataTableInner<T extends object>({
   }, []);
 
   const isRowBusy = useCallback((key: string) => busyKeys.has(key), [busyKeys]);
-
-  /** Cell commit (blur / select / custom builder): update the field, await persist. */
   const updateRow = useCallback(
     async (key: string, _globalIndex: number, patch: Partial<T>) => {
       if (Object.keys(patch).length === 0) return;
@@ -1012,7 +1000,7 @@ function CollectionDataTableInner<T extends object>({
     [collection, markBusy],
   );
 
-  /** Create button: insert a blank row, wait until it is persisted + visible. */
+
   const insertRow = useCallback(async () => {
     setIsCreating(true);
     try {
@@ -1029,8 +1017,6 @@ function CollectionDataTableInner<T extends object>({
 
   const insertRowBelow = useCallback(
     async (_globalIndex: number) => {
-      // Collections are unordered sets — "below" has no persisted meaning,
-      // so this inserts a fresh row the same way the Add-line button does.
       await insertRow();
     },
     [insertRow],
@@ -1063,9 +1049,6 @@ function CollectionDataTableInner<T extends object>({
       onInsert={insertRow}
       onInsertBelow={insertRowBelow}
       onDelete={deleteRow}
-      // No persisted order column → drag reorder stays off unless the caller
-      // opts in explicitly AND wires its own order field via onReorder. Until
-      // then collection rows render without the drag handle.
       onReorder={undefined}
       isCreating={isCreating}
       isRowBusy={isRowBusy}

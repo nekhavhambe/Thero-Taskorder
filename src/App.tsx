@@ -22,33 +22,37 @@ export interface TaskOrderConfig {
 
 function AppInner() {
   const { id } = useParams();
-  const { data }: any = useLiveSuspenseQuery((q) =>
+  const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      .join({ Project: projectCollection }, ({ TaskOrders, Project }) =>
-        eq(TaskOrders?.RPROJECT ?? "", Project.RECORDNO),
-      )
       .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
-      .select(({ TaskOrders, Project }) => ({ ...TaskOrders, Project }))
+      .findOne(),
+  );
+
+  const rproject: string = taskOrder?.RPROJECT ?? "";
+  const { data: project }: any = useLiveSuspenseQuery((q) =>
+    q
+      .from({ Project: projectCollection })
+      .where(({ Project }) => eq(Project.RECORDNO, rproject))
       .findOne(),
   );
 
   const defaultValues = useMemo<TaskOrderConfig>(
     () => ({
-      id: data?.ID ?? "",
+      id: taskOrder?.ID ?? "",
       date: {
-        start: toIsoDateParam(data?.START_DATE),
-        end: toIsoDateParam(data?.END_DATE),
+        start: toIsoDateParam(taskOrder?.START_DATE),
+        end: toIsoDateParam(taskOrder?.END_DATE),
       },
-      name: data?.TASK_DESCRIPTION ?? "",
-      order: data?.PURCHASE_ORDER ?? "",
+      name: taskOrder?.TASK_DESCRIPTION ?? "",
+      order: taskOrder?.PURCHASE_ORDER ?? "",
       project: {
-        key: data?.Project?.RECORDNO ?? "",
-        name: data?.Project?.NAME ?? "",
-        id: data?.Project?.PROJECTID ?? "",
+        key: project?.RECORDNO ?? "",
+        name: project?.NAME ?? "",
+        id: project?.PROJECTID ?? "",
       },
     }),
-    [data],
+    [taskOrder, project],
   );
 
   const form = useForm<TaskOrderConfig>({
@@ -58,7 +62,10 @@ function AppInner() {
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       {JSON.stringify(
-        data?.map((el:any) => el?.ID),
+        {
+          taskOrder: taskOrder?.ID ?? null,
+          project: project?.RECORDNO ?? null,
+        },
         null,
         2,
       )}
