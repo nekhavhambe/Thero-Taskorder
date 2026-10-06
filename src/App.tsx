@@ -25,7 +25,14 @@ function AppInner() {
   const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
+      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", `${id}`))
+      .findOne(),
+  );
+
+    const { data: un }: any = useLiveSuspenseQuery((q) =>
+    q
+      .from({ TaskOrders: taskOrderCollection })
+      // .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
       .findOne(),
   );
 
@@ -64,7 +71,8 @@ function AppInner() {
       {JSON.stringify(
         {
           taskOrder: taskOrder ?? null,
-          project: project ?? null,
+          nofilter: un,
+          project: project?? null,
         },
         null,
         2,

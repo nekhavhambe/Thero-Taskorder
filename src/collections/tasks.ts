@@ -23,7 +23,7 @@ export const standardTaskCollection = createCollection(
       try {
         const { data } = await query({
           object: "TASK",
-          fields: ["RECORDNO","TASKID","NAME","DESCRIPTION", "STATUS", "PROJECTKEY", "PROJECTID"],
+          fields: ["RECORDNO","TASKID","NAME","DESCRIPTION",  "PROJECTKEY", "PROJECTID"],
           orderBy: "TASKID",
         });
    
