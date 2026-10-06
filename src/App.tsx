@@ -22,10 +22,13 @@ export interface TaskOrderConfig {
 
 function AppInner() {
   const { id } = useParams();
+  // Template literals turn undefined into "undefined" — normalize first so a
+  // missing ?id= param matches nothing instead of a phantom string.
+  const idParam = String(id ?? "").trim();
   const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", `${id}`))
+      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", idParam))
       .findOne(),
   );
 
@@ -40,7 +43,7 @@ function AppInner() {
   const { data: project }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ Project: projectCollection })
-      // .where(({ Project }) => eq(Project.RECORDNO, rproject))
+      .where(({ Project }) => eq(Project.RECORDNO, rproject))
       .findOne(),
   );
 
