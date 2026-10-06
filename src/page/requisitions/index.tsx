@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FC } from 'react';
-import { DataTable } from '../../components/tables/entry-table';
+import { StaticDataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency } from '../../components/tables/entry-table';
 import {
@@ -127,7 +127,7 @@ export const Requisitions: FC = () => {
 
   return (
     <div className="-mx-6 -mb-6 -mt-6 overflow-hidden rounded [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-      <DataTable<PurchaseDocument>
+      <StaticDataTable<PurchaseDocument>
         data={rows}
         onChange={() => {}}
         columns={requisitionColumns}

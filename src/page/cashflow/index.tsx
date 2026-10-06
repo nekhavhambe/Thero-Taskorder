@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FC } from 'react';
-import { DataTable } from '../../components/tables/entry-table';
+import { StaticDataTable } from '../../components/tables/entry-table';
 import type { EntryColumn } from '../../components/tables/entry-table';
 import { formatCurrency, parseNumeric } from '../../components/tables/entry-table';
 import { Field } from '../../components/forms/field';
@@ -182,7 +182,7 @@ export const Cashflow: FC = () => {
         </Field>
       </div>
       <div className="-mx-6 -mb-6 overflow-hidden [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:border-t-0">
-        <DataTable<CashflowRow>
+        <StaticDataTable<CashflowRow>
           data={entries}
           onChange={(rows) => setEntries(rows)}
           columns={cashflowColumns}

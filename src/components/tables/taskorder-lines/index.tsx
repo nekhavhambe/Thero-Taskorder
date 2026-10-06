@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { DataTable } from '../entry-table/table';
+import { CollectionDataTable } from '../entry-table/table';
 import type { EntryColumn } from '../entry-table/table';
 import { formatCurrency, parseNumeric } from '../entry-table';
 import { standardTaskCollection } from '../../../collections/standard-tasks';
@@ -377,7 +377,7 @@ export const TaskOrderLinesTable: React.FC<TaskOrderLinesTableProps> = ({
         className="hidden"
         aria-label="Upload supporting documents"
       />
-      <DataTable<TaskOrderLine>
+      <CollectionDataTable<TaskOrderLine>
         collection={taskOrderLineCollection}
         columns={columns}
         createRow={() => createTaskOrderLineRow({ taskOrderId, taskOrderRecordNo })}

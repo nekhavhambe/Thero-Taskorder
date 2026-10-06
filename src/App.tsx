@@ -62,15 +62,6 @@ function AppInner() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      {JSON.stringify(
-        {
-          taskOrder: taskOrder ?? null,
-          project: project?? null,
-          idParam,
-        },
-        null,
-        2,
-      )}
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
