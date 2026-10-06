@@ -9,7 +9,7 @@ import { toIsoDateParam, useParams } from "./hook/params";
 import { Component, Suspense, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useForm, FormProvider } from "react-hook-form";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
+import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import { projectCollection, taskOrderCollection } from "./collections";
 
 export interface TaskOrderConfig {
@@ -25,7 +25,7 @@ function AppInner() {
   const { data: taskOrder }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ TaskOrders: taskOrderCollection })
-      .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
+      // .where(({ TaskOrders }) => eq(TaskOrders?.ID ?? "", id ?? ""))
       .findOne(),
   );
 
@@ -33,7 +33,7 @@ function AppInner() {
   const { data: project }: any = useLiveSuspenseQuery((q) =>
     q
       .from({ Project: projectCollection })
-      .where(({ Project }) => eq(Project.RECORDNO, rproject))
+      // .where(({ Project }) => eq(Project.RECORDNO, rproject))
       .findOne(),
   );
 
@@ -69,6 +69,8 @@ function AppInner() {
         null,
         2,
       )}
+     id {id} --
+     project {rproject} --
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
