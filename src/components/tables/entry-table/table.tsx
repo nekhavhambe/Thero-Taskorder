@@ -3,7 +3,7 @@ import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import type { QueryBuilder } from "@tanstack/db";
 import type { AnyCollection } from "../../../collections/helpers";
 import { View } from "./elements/view";
-import { normalizeLiveRows, waitForPersist } from "./elements/cells";
+import { waitForPersist } from "./elements/cells";
 import type { EntryColumn } from "./types";
 
 
@@ -77,7 +77,7 @@ export function Table<T extends object>({
     if (offset != null) scoped = scoped.offset(offset);
     return scoped;
   });
-  const rows = useMemo(() => normalizeLiveRows<T>(liveData), [liveData]);
+  const rows = useMemo(() => (liveData ?? []) as T[], [liveData]);
 
   const resolveId = useCallback(
     (row: T) => String((row as { id?: unknown }).id ?? ""),
