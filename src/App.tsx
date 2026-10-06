@@ -76,12 +76,12 @@ function AppInner() {
           taskOrder: taskOrder ?? null,
           nofilter: un,
           project: project?? null,
+          idParam,
+          rproject
         },
         null,
         2,
       )}
-     id {id} --
-     project {rproject} --
       <FormProvider {...form}>
         <Routes>
           <Route element={<Layout />}>
