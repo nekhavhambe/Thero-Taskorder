@@ -6,7 +6,8 @@ import { Requisitions } from "./page";
 import { Cashflow } from "./page";
 import { Tasks } from "./page";
 import { toIsoDateParam, useParams } from "./hook/params";
-import { useMemo } from "react";
+import { Component, Suspense, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { projectCollection, taskOrderCollection } from "./collections";
@@ -19,7 +20,7 @@ export interface TaskOrderConfig {
   date: { start: string; end: string };
 }
 
-function App() {
+function AppInner() {
   const { id } = useParams();
   const { data }: any = useLiveSuspenseQuery((q) =>
     q
@@ -57,7 +58,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       {JSON.stringify(
-        data.map((el:any) => el?.ID),
+        data?.map((el:any) => el?.ID),
         null,
         2,
       )}
@@ -88,6 +89,58 @@ function App() {
         </Routes>
       </FormProvider>
     </div>
+  );
+}
+
+class QueryErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    alert(`[app] query failed: ${error.message}`);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen bg-slate-50 p-8">
+          <div className="max-w-xl rounded border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+            <div className="font-semibold">Could not load the task order.</div>
+            <div className="mt-1 break-words">{this.state.error.message}</div>
+            <button
+              type="button"
+              onClick={() => this.setState({ error: null })}
+              className="mt-3 rounded border border-red-400 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function App() {
+  return (
+    <QueryErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-slate-50 p-8 text-sm text-slate-500">
+            Loading task order…
+          </div>
+        }
+      >
+        <AppInner />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }
 
